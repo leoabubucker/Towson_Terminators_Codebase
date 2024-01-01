@@ -1,0 +1,19 @@
+{
+	"extension": {
+		"version": "0.5.0",
+		"json": 2
+	},
+	"project": {
+		"name": "2023-24_First_Code",
+		"description": "",
+		"creationDate": "9/13/2023, 2:38:01 PM",
+		"platform": "V5",
+		"language": "cpp",
+		"slot": 3,
+		"sdkVersion": "V5_20220726_10_00_00",
+		"cpp": {
+			"includePath": [],
+			"printf_float": true
+		}
+	}
+}
