@@ -1,0 +1,12 @@
+// extern void driveFwd(int deg);
+// extern void driveRev(int deg);
+extern void turnLeft(float degrees);
+extern void turnRight(float degrees);
+// extern void turn(float degrees);
+extern void drive(float inches);
+extern int drivePID();
+extern bool enableDrivePID;
+extern int desiredValue;
+extern int desiredTurnValue;
+extern bool resetDriveSensors;
+extern void move_to_angle(double degrees);

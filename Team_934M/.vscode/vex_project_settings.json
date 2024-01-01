@@ -1,0 +1,18 @@
+{
+	"project": {
+		"name": "Team_934M",
+		"slot": 1,
+		"description": "Empty V5 C++ Project",
+		"platform": "V5",
+		"creationDate": "Mon, 03 Oct 2022 14:21:35 GMT",
+		"language": "cpp",
+		"sdkVersion": "V5_20220726_10_00_00",
+		"cpp": {
+			"includePath": []
+		}
+	},
+	"extension": {
+		"version": "0.1.0",
+		"json": 1
+	}
+}
