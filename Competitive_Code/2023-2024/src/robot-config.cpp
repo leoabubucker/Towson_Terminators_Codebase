@@ -139,18 +139,17 @@ std::string to_string(T value)
 brain Brain;
 competition Competition;
 controller Controller1 = controller(primary);
-motor leftFront = motor(PORT2, ratio18_1, true);
-motor leftBack = motor(PORT4, ratio18_1, true);
-motor rightFront = motor(PORT7, ratio18_1, false);
-motor rightBack = motor(PORT5, ratio18_1, false);
-motor intake = motor(PORT8, ratio18_1, false);
-motor elevation = motor(PORT9, ratio36_1, false);
-motor puncher = motor(PORT10, ratio36_1, false);
-motor leftWing = motor(PORT11, false);
-motor rightWing = motor(PORT12, false);
-motor_group allMotors = motor_group(leftFront, leftBack, rightFront, rightBack, intake, elevation, puncher, leftWing, rightWing);
-motor_group driveMotors = motor_group(leftFront, leftBack, rightFront, rightBack);
-motor_group nonDriveMotors = motor_group(intake, elevation, puncher, leftWing, rightWing);
+motor puncher = motor(PORT11, ratio36_1, false);
+motor leftWing = motor(PORT12, false);
+motor rightWing = motor(PORT15, false);
+motor intake = motor(PORT16, ratio18_1, true);
+motor leftBack = motor(PORT17, ratio18_1, true);
+motor leftFront = motor(PORT18, ratio18_1, true);
+motor rightBack = motor(PORT19, ratio18_1, false);
+motor rightFront = motor(PORT20, ratio18_1, false);
+motor_group allMotors = motor_group(puncher, leftWing, rightWing, intake, leftBack, leftFront, rightBack, rightFront);
+motor_group driveMotors = motor_group(leftBack, leftFront, rightBack, rightFront);
+motor_group nonDriveMotors = motor_group(puncher, leftWing, rightWing, intake);
 motor_group wingMotors = motor_group(leftWing, rightWing);
 
 /*---------------------------------------------------------------------------*/

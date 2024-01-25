@@ -20,7 +20,6 @@
 #include "gui.h" //GUI functions
 using namespace vex; //VEX References
 
-std::string autonSelection = ""; //Init str to store the decided auton
 MotorCollection myMotorCollection; //Init instance of MotorCollection class to use for recurring motor testing
 
 /*------------------------------------------------------------------------------------*/
@@ -36,24 +35,19 @@ MotorCollection myMotorCollection; //Init instance of MotorCollection class to u
 
 
 void pre_auton(void) {
-  autonSelection = autonSelector(); //Calls gui.cpp file that opens GUI for auton selection
+  // autonSelection = autonSelector(); //Calls gui.cpp file that opens GUI for auton selection
 
   //Resets Motor Encoder Values
   allMotors.resetPosition();
 
   //Sets Motor Velocities
   allMotors.setVelocity(100, percent);
-  elevation.setVelocity(50, percent);
 
   //Sets Motor Torque to 100%
   allMotors.setMaxTorque(100, percent);
 
   //Set Default Brake Type For Non-Drive Motors to Hold
   nonDriveMotors.setStopping(vex::brakeType::hold);
-
-  //Sets Timeout Value Of 5 Seconds For Motors That Have Automatic Movement
-  elevation.setTimeout(5, vex::timeUnits::sec);
-  wingMotors.setTimeout(5, vex::timeUnits::sec);
   
   //Adds all motors to myMotorCollection instance of MotorCollection Class with respective shortNames
   myMotorCollection.addMotor(leftFront, "LF");
@@ -62,7 +56,6 @@ void pre_auton(void) {
   myMotorCollection.addMotor(rightBack, "RB");
   myMotorCollection.addMotor(intake, "I");
   myMotorCollection.addMotor(puncher, "P");
-  myMotorCollection.addMotor(elevation, "E");
   myMotorCollection.addMotor(leftWing, "LW");
   myMotorCollection.addMotor(rightWing, "RW");
 }
@@ -81,30 +74,51 @@ void pre_auton(void) {
 void autonomous(void) 
 { 
   //Runs Autonomous for Red 2 & Blue 1 starting positions
-  if(autonSelection == "r2b1Auton"){
     drawGUI(myMotorCollection, "r2b1AUTON"); // Calls/Updates GUI and provides match state "r2b1AUTON"
-    // Red Starting Position 2 & Blue Starting Position 1
-  }
-  //Runs Autonomous for Red 1 & Blue 2 starting positions
-  else if(autonSelection == "r1b2Auton"){
-    drawGUI(myMotorCollection, "r1b2AUTON"); // Calls/Updates GUI and provides match state "r1b2AUTON"
-    // Red Starting Position 1 & Blue Starting Position 2
-  }
-  else{
-    drawGUI(myMotorCollection, "NO AUTON"); // Calls/Updates GUI and provides match state "NO AUTON"
-  }
-}
+    
+    /*------------------------------------------------------------------------------------*/
+    /*                                                                                    */
+    /*                         Starting A Match - Our Offensive Zone                      */
+    /*                                                                                    */
+    /*  1. Place robot in the middle of Blue Starting Position 1 (Between the Red Match   */
+    /*  Load Zone and Blue Elevation Bar                                                  */
+    /*                                                                                    */
+    /*  2. Place the robot at the front of the tile with the intake-side facing forward.  */
+    /*                                                                                    */
+    /*  3. Manually spin the intake to intake the preload triball.                        */
+    /*                                                                                    */
+    /*  4. Ensure all motors are connected and the Controller is plugged in.              */
+    /*                                                                                    */
+    /*  5. Start the "Run" of the program via the Controller; it is not necessary to      */
+    /*  click "Timed Run"                                                                 */
+    /*                                                                                    */
+    /*  6. The autonomous will hopefully score the preload into our goal before going to  */
+    /*  our elevation bar and touching it. (2/3 auton bonus requirements achieved)        */
+    /*                                                                                    */
+    /*------------------------------------------------------------------------------------*/
 
-/*------------------------------------------------------------------------------------*/
-/*                                                                                    */
-/*                              User Control Task                                     */
-/*                                                                                    */
-/*  This task is used to control your robot during the user control phase of          */
-/*  a VEX Competition.                                                                */
-/*                                                                                    */
-/*  You must modify the code to add your own robot specific commands here.            */
-/*                                                                                    */
-/*------------------------------------------------------------------------------------*/
+    drive(48, "fwd", 100);
+    turn(90, "right", 50);
+    drive(24, "fwd", 100);
+    intake.spinFor(vex::directionType::rev, 400, vex::rotationUnits::deg, true);
+    drive(24, "rev", 100);
+    turn(90, "right", 50);
+    drive(48, "fwd", 100);
+    turn(90, "right", 50);
+    drive(24, "fwd", 100);    
+  }
+  
+
+/*--------------------------------------------------------------------------------------*/
+/*                                                                                      */
+/*                              User Control Task                                       */
+/*                                                                                      */
+/*  This task is used to control your robot during the user control phase of            */
+/*  a VEX Competition.                                                                  */
+/*                                                                                      */
+/*  You must modify the code to add your own robot specific commands here.              */
+/*                                                                                      */
+/*--------------------------------------------------------------------------------------*/
 
 void usercontrol(void) {
   /*------------------------------------------------------------------------------------*/
@@ -114,11 +128,16 @@ void usercontrol(void) {
   /*  Quick tasks that must be completed after autonomous and only once.                */
   /*                                                                                    */
   /*------------------------------------------------------------------------------------*/
-
   int seconds = 0; //Init seconds int to track seconds of user control execution (converted from msec)
   drawGUI(myMotorCollection, "USER CONTROL"); // Calls/Updates GUI and provides match state "USER CONTROL"
   std::string driveConfig = myMotorCollection.checkDriveMotors(); //Checks drive motor statuses and switches drive mode (4-wheel, front-wheel, rear-wheel, LFRB, RFLB)
-  
+  bool intakeFwdState = false;
+  bool intakeFwdLastState = false;
+  bool intakeRevState = false;
+  bool intakeRevLastState = false;
+  bool puncherState = false;
+  bool puncherLastState = false;
+
   // User control code here, inside the loop
   while (1) {
     //Runs every 2 seconds
@@ -170,95 +189,90 @@ void usercontrol(void) {
     /*                                                                                    */
     /*------------------------------------------------------------------------------------*/
 
-    if(Controller1.ButtonX.pressing()){
-      intake.spin(vex::directionType::fwd);
-    }
-    else if(Controller1.ButtonY.pressing()){
-      intake.spin(vex::directionType::rev);
-    }
-    else{
-      intake.stop(vex::brakeType::hold);
-    }
+  
+    if(Controller1.ButtonX.pressing() && !intakeFwdLastState) {
+      intakeFwdState = !intakeFwdState;
+      intakeFwdLastState = true;
+   } else if(!Controller1.ButtonX.pressing()) {
+      intakeFwdLastState = false;
+   }
+   if(intakeFwdState) {
+          if(intakeRevState){
+            intakeRevState = false;
+            intakeRevLastState = false;
+          }
+          intake.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+   } 
 
-    /*------------------------------------------------------------------------------------*/
-    /*                                                                                    */
-    /*                              Elevation Controls                                    */
-    /*                                                                                    */
-    /*  One red motor gear-ratioed for torque that turns fwd/rev at 50% velocity          */
-    /*  to lift/lower an arm that hangs on the lower, horizontal elevation bar            */
-    /*  Automatic Controls: Lift to ___ Degrees - L1, Lower to 0 Degrees - L2             */  
-    /*  Manual Controls (Limited to 0-___ Degrees): Lift - R1, Lower - R2                 */
-    /*  NOTE: Automatic Controls wll timeout after 5 seconds if degree is not reached     */
-    /*                                                                                    */
-    /*------------------------------------------------------------------------------------*/ 
+  if(Controller1.ButtonB.pressing() && !intakeRevLastState) {
+      intakeRevState = !intakeRevState;
+      intakeRevLastState = true;
+   } else if(!Controller1.ButtonB.pressing()) {
+      intakeRevLastState = false;
+   }
+   if(intakeRevState) {
+          if(intakeFwdState){
+            intakeFwdState = false;
+            intakeFwdLastState = false;
+          }
+          intake.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
+   } 
 
-    if(Controller1.ButtonL1.pressing()){
-      elevation.spinTo(200, vex::rotationUnits::deg, true);
-    }
-    else if(Controller1.ButtonL2.pressing()){
-      elevation.spinTo(0, vex::rotationUnits::deg, true);
-    }
-    else if(Controller1.ButtonR1.pressing() && elevation.position(vex::rotationUnits::deg) < 200){
-      elevation.spin(vex::directionType::fwd);
-    }
-    else if(Controller1.ButtonR2.pressing() && elevation.position(vex::rotationUnits::deg) > 0){
-      elevation.spin(vex::directionType::rev);
-    }
-    else{
-      elevation.stop(vex::brakeType::hold);
-    }
-
+   if(!intakeFwdState && !intakeRevState){
+    intake.stop();
+   }
+ 
     /*------------------------------------------------------------------------------------*/
     /*                                                                                    */
     /*                              Puncher Controls                                      */
     /*                                                                                    */
     /*  One red motor gear-ratioed for torque that turns fwd/rev at 100% velocity         */
     /*  to launch triballs through a puncher on a slip gear system.                       */
-    /*  Controls: Toggle On - Y, Toggle Off - A                                           */  
+    /*  Controls: Toggle - Y                                                              */  
     /*                                                                                    */
     /*------------------------------------------------------------------------------------*/ 
 
-    bool puncherIsPunching;
 
-    if(Controller1.ButtonR1.pressing()){
-      puncherIsPunching = true;
-    }
-    if(Controller1.ButtonR2.pressing()){
-      puncherIsPunching = false;
-    }
-    if(puncherIsPunching){
-      puncher.spin(vex::directionType::fwd);
-    }
-    else{
+    if(Controller1.ButtonY.pressing() && !puncherLastState) {
+      puncherState = !puncherState;
+      puncherLastState = true;
+   } else if(!Controller1.ButtonY.pressing()) {
+      puncherLastState = false;
+   }
+
+   if(puncherState) {
+          puncher.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+   } else {
       puncher.stop();
-    }
-
+   }
     /*------------------------------------------------------------------------------------*/
     /*                                                                                    */
     /*                              Wing Controls                                         */
     /*                                                                                    */
     /*  Two 5.5w motor that control individual mechanisms that turns fwd/rev at 100%      */
     /*  velocity to open/close wings that move triballs                                   */
-    /*  Automatic Controls: Open to ___ Degrees - Up, Close to 0 Degrees - Down           */  
-    /*  Manual Controls (Limited to 0-___ Degrees): Open - Left, Close - Right            */
-    /*  NOTE: Automatic Controls wll timeout after 5 seconds if degree is not reached     */
+    /*  Manual Controls (Limited Mechanically): Open - L1/R1, Close - L2/R2               */
     /*                                                                                    */
     /*------------------------------------------------------------------------------------*/ 
 
-    if(Controller1.ButtonUp.pressing()){
-      wingMotors.spinTo(200, vex::rotationUnits::deg, true);
+    if(Controller1.ButtonL1.pressing()){
+      leftWing.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
     }
-    else if(Controller1.ButtonDown.pressing()){
-      wingMotors.spinTo(0, vex::rotationUnits::deg, true);
-    }
-    else if(Controller1.ButtonLeft.pressing() && wingMotors.position(vex::rotationUnits::deg) < 200){
-      wingMotors.spin(vex::directionType::fwd);
-    }
-    else if(Controller1.ButtonRight.pressing() && wingMotors.position(vex::rotationUnits::deg) > 0){
-      wingMotors.spin(vex::directionType::rev);
+    else if(Controller1.ButtonL2.pressing()){
+      leftWing.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
     }
     else{
-      wingMotors.stop(vex::brakeType::hold);
+      leftWing.stop(vex::brakeType::hold);
+    }
+
+    if(Controller1.ButtonR1.pressing()){
+      rightWing.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+    }
+    else if(Controller1.ButtonR2.pressing()){
+      rightWing.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
+    }
+    else{
+      rightWing.stop(vex::brakeType::hold);
     }
     wait(20, msec); // Cooldown to prevent excess CPU usage and subsequent brain crashing
     seconds += 0.02; // Converts the msec wait time to seconds to best approximate the total seconds passed in the while loop

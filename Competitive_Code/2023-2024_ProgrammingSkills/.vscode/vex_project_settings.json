@@ -4,12 +4,12 @@
 		"json": 2
 	},
 	"project": {
-		"name": "H2H-DS_23-24",
-		"description": "Over-Under (2023-24) C++ for Head2Head and Driver Skills Matches\nCoded By Leo Abubucker",
+		"name": "PS_23-24",
+		"description": "Over-Under (2023-24) C++ code for Programming Skills Matches\nCoded By Leo Abubucker",
 		"creationDate": "9/13/2023, 2:38:01 PM",
 		"platform": "V5",
 		"language": "cpp",
-		"slot": 1,
+		"slot": 2,
 		"sdkVersion": "V5_20220726_10_00_00",
 		"cpp": {
 			"includePath": [],

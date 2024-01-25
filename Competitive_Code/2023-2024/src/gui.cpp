@@ -59,8 +59,8 @@ std::string autonSelector(){
     Brain.Screen.drawRectangle(r2b1AutonBtnCoords["x-left"], r2b1AutonBtnCoords["y-top"], r2b1AutonBtnCoords["x-right"] - r2b1AutonBtnCoords["x-left"], r2b1AutonBtnCoords["y-bottom"] - r2b1AutonBtnCoords["y-top"], color::red);
     
     //Prints R2B1 Auton in the middle of created btn
-    Brain.Screen.setCursor(6, 8);
-    Brain.Screen.print("R2B1 Auton");
+    Brain.Screen.setCursor(6, 4);
+    Brain.Screen.print("Our Offensive Zone (r2b1) Auton");
 
     /*------------------------------------------------------------------------------------*/
     /*                                                                                    */
@@ -84,8 +84,8 @@ std::string autonSelector(){
     Brain.Screen.drawRectangle(r1b2AutonBtnCoords["x-left"], r1b2AutonBtnCoords["y-top"], r1b2AutonBtnCoords["x-right"] - r1b2AutonBtnCoords["x-left"], r1b2AutonBtnCoords["y-bottom"] - r1b2AutonBtnCoords["y-top"], color::green);
    
     //Prints R1B2 Auton in the middle of created btn
-    Brain.Screen.setCursor(6, 30);
-    Brain.Screen.print("R1B2 Auton");
+    Brain.Screen.setCursor(6, 26);
+    Brain.Screen.print("Opposing Offensive Zone (r1b2) Auton");
 
 
     /*------------------------------------------------------------------------------------*/
@@ -106,16 +106,20 @@ std::string autonSelector(){
         if(localLastTouchX >= r2b1AutonBtnCoords["x-left"] && localLastTouchX <= r2b1AutonBtnCoords["x-right"] && localLastTouchY >= r2b1AutonBtnCoords["y-top"] && localLastTouchY <= r2b1AutonBtnCoords["y-bottom"]){
             waitingForUserInput = false;
             response =  "r2b1Auton";
+            Brain.Screen.clearScreen();
+            Brain.Screen.printAt(1,1, "Our Offensive Zone (r2b1) Autonomous Programm Selected.");
         }
         //Checks if user touches the R1B2 Auton Btn
         else if(localLastTouchX >= r1b2AutonBtnCoords["x-left"] && localLastTouchX <= r1b2AutonBtnCoords["x-right"] && localLastTouchY >= r1b2AutonBtnCoords["y-top"] && localLastTouchY <= r1b2AutonBtnCoords["y-bottom"]){
             waitingForUserInput = false; 
             response = "r1b2Auton";
+            Brain.Screen.clearScreen();
+            Brain.Screen.printAt(1,1, "Opposing Offensive Zone (r1b2) Autonomous Programm Selected.");
         }
         wait(20, msec); // Cooldown to prevent excess CPU usage and subsequent brain crashing
-    }
+        }
     return response; //Returns auton selection
-}
+    }
 
 void drawGUI(MotorCollection myMotorCollection, std::string matchState){
     Brain.Screen.setCursor(1,1);
