@@ -1,0 +1,19 @@
+{
+	"extension": {
+		"version": "0.5.0",
+		"json": 2
+	},
+	"project": {
+		"name": "PS-SIMPLE_23-24",
+		"description": "Programming Skills (Only Launching), 2023-2024, C++ by Leo Abubucker",
+		"creationDate": "2/1/2024, 8:15:44 PM",
+		"platform": "V5",
+		"language": "cpp",
+		"slot": 4,
+		"sdkVersion": "V5_20220726_10_00_00",
+		"cpp": {
+			"includePath": [],
+			"printf_float": true
+		}
+	}
+}

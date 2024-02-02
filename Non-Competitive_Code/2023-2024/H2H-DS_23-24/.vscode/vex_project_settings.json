@@ -1,0 +1,19 @@
+{
+	"extension": {
+		"version": "0.5.0",
+		"json": 2
+	},
+	"project": {
+		"name": "H2H-DS_23-24",
+		"description": "Head2Head & Driver Skills, 2023-2024, C++ by Leo Abubucker",
+		"creationDate": "1/25/2024, 8:09:38 PM",
+		"platform": "V5",
+		"language": "cpp",
+		"slot": 1,
+		"sdkVersion": "V5_20220726_10_00_00",
+		"cpp": {
+			"includePath": [],
+			"printf_float": true
+		}
+	}
+}
