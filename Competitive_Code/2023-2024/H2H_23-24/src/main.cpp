@@ -79,16 +79,21 @@ void autonomous(void)
     /*                                                                                    */
     /*------------------------------------------------------------------------------------*/
 
-    drive(48, "fwd", 100);
-    turn(90, "right", 50);
-    intake.spinFor(vex::directionType::rev, 800, vex::rotationUnits::deg, true);
-    drive(10, "rev", 100);
-    turn(73, "left", 50);
-    drive(8, "fwd", 100);
-    intake.spinFor(vex::directionType::fwd, 800, vex::rotationUnits::deg, true);
-    turn(95, "right", 50);
-    drive(15, "fwd", 100);
-    intake.spinFor(vex::directionType::rev, 800, vex::rotationUnits::deg, true);
+    // drive(48, "fwd", 100);
+    // turn(90, "right", 50);
+    // intake.spinFor(vex::directionType::rev, 800, vex::rotationUnits::deg, true);
+    // drive(10, "rev", 100);
+    // turn(73, "left", 50);
+    // drive(8, "fwd", 100);
+    // intake.spinFor(vex::directionType::fwd, 800, vex::rotationUnits::deg, true);
+    // turn(95, "right", 50);
+    // drive(15, "fwd", 100);
+    // intake.spinFor(vex::directionType::rev, 800, vex::rotationUnits::deg, true);
+    drive(36, "rev", 100);
+    // intake.spinFor(vex::directionType::rev, 800, vex::rotationUnits::deg, true);
+    drive(10, "fwd", 100);
+    drive(26, "rev", 100);
+    drive(30, "fwd", 100);
   }
   
 
