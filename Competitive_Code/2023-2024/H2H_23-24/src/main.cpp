@@ -43,6 +43,7 @@ void pre_auton(void) {
 
   //Set Default Brake Type For Non-Drive Motors to Hold
   nonDriveMotors.setStopping(vex::brakeType::hold);
+  wingMotors.setTimeout(2, vex::timeUnits::sec);
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -89,11 +90,15 @@ void autonomous(void)
     // turn(95, "right", 50);
     // drive(15, "fwd", 100);
     // intake.spinFor(vex::directionType::rev, 800, vex::rotationUnits::deg, true);
-    drive(36, "rev", 100);
+    drive(36, "rev", 100); //ONE GOAL
     // intake.spinFor(vex::directionType::rev, 800, vex::rotationUnits::deg, true);
-    drive(10, "fwd", 100);
-    drive(26, "rev", 100);
-    drive(30, "fwd", 100);
+    drive(10, "fwd", 100);//ONE GOAL
+    drive(26, "rev", 100);//ONE GOAL
+    drive(30, "fwd", 100);//ONE GOAL
+    // drive(24, "rev", 50); //TOUCHING BAR
+    // drive(2, "rev", 10); // TOUCHING-BAR
+    // turn(15, "right", 50);
+
   }
   
 
@@ -116,10 +121,10 @@ void usercontrol(void) {
   /*  Quick tasks that must be completed after autonomous and only once.                */
   /*                                                                                    */
   /*------------------------------------------------------------------------------------*/
-  bool intakeFwdState = false;
-  bool intakeFwdLastState = false;
-  bool intakeRevState = false;
-  bool intakeRevLastState = false;
+  // bool intakeFwdState = false;
+  // bool intakeFwdLastState = false;
+  // bool intakeRevState = false;
+  // bool intakeRevLastState = false;
   bool puncherState = false;
   bool puncherLastState = false;
 
@@ -148,39 +153,47 @@ void usercontrol(void) {
     /*  Controls: Intake - X, Outtake - B                                                 */  
     /*                                                                                    */
     /*------------------------------------------------------------------------------------*/
-
+ if(Controller1.ButtonL2.pressing()){
+      intake.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+    }
+    else if(Controller1.ButtonR2.pressing()){
+      intake.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
+    }
+    else{
+      intake.stop(vex::brakeType::coast);
+    }
   
-    if(Controller1.ButtonX.pressing() && !intakeFwdLastState) {
-      intakeFwdState = !intakeFwdState;
-      intakeFwdLastState = true;
-   } else if(!Controller1.ButtonX.pressing()) {
-      intakeFwdLastState = false;
-   }
-   if(intakeFwdState) {
-          if(intakeRevState){
-            intakeRevState = false;
-            intakeRevLastState = false;
-          }
-          intake.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
-   } 
+  //   if(Controller1.ButtonX.pressing() && !intakeFwdLastState) {
+  //     intakeFwdState = !intakeFwdState;
+  //     intakeFwdLastState = true;
+  //  } else if(!Controller1.ButtonX.pressing()) {
+  //     intakeFwdLastState = false;
+  //  }
+  //  if(intakeFwdState) {
+  //         if(intakeRevState){
+  //           intakeRevState = false;
+  //           intakeRevLastState = false;
+  //         }
+  //         intake.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+  //  } 
 
-  if(Controller1.ButtonB.pressing() && !intakeRevLastState) {
-      intakeRevState = !intakeRevState;
-      intakeRevLastState = true;
-   } else if(!Controller1.ButtonB.pressing()) {
-      intakeRevLastState = false;
-   }
-   if(intakeRevState) {
-          if(intakeFwdState){
-            intakeFwdState = false;
-            intakeFwdLastState = false;
-          }
-          intake.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
-   } 
+  // if(Controller1.ButtonB.pressing() && !intakeRevLastState) {
+  //     intakeRevState = !intakeRevState;
+  //     intakeRevLastState = true;
+  //  } else if(!Controller1.ButtonB.pressing()) {
+  //     intakeRevLastState = false;
+  //  }
+  //  if(intakeRevState) {
+  //         if(intakeFwdState){
+  //           intakeFwdState = false;
+  //           intakeFwdLastState = false;
+  //         }
+  //         intake.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
+  //  } 
 
-   if(!intakeFwdState && !intakeRevState){
-    intake.stop();
-   }
+  //  if(!intakeFwdState && !intakeRevState){
+  //   intake.stop();
+  //  }
  
     /*------------------------------------------------------------------------------------*/
     /*                                                                                    */
@@ -202,8 +215,10 @@ void usercontrol(void) {
 
    if(puncherState) {
           puncher.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+          puncher2.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
    } else {
       puncher.stop();
+      puncher2.stop();
    }
     /*------------------------------------------------------------------------------------*/
     /*                                                                                    */
@@ -216,24 +231,31 @@ void usercontrol(void) {
     /*------------------------------------------------------------------------------------*/ 
 
     if(Controller1.ButtonL1.pressing()){
-      leftWing.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+      leftWing.spinFor(vex::directionType::fwd, 100, vex::rotationUnits::deg, 50, vex::velocityUnits::pct, false);
+      rightWing.spinFor(vex::directionType::fwd, 100, vex::rotationUnits::deg, 50, vex::velocityUnits::pct, true);
+      // leftWing.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+      // rightWing.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
     }
-    else if(Controller1.ButtonL2.pressing()){
-      leftWing.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
+    else if(Controller1.ButtonR1.pressing()){
+      leftWing.spinFor(vex::directionType::rev, 100, vex::rotationUnits::deg, 50, vex::velocityUnits::pct, false);
+      rightWing.spinFor(vex::directionType::rev, 100, vex::rotationUnits::deg, 50, vex::velocityUnits::pct, true);
+      // leftWing.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
+      // rightWing.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
     }
     else{
-      leftWing.stop(vex::brakeType::hold);
+      leftWing.stop(vex::brakeType:: coast);
+      rightWing.stop(vex::brakeType::coast);
     }
 
-    if(Controller1.ButtonR1.pressing()){
-      rightWing.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
-    }
-    else if(Controller1.ButtonR2.pressing()){
-      rightWing.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
-    }
-    else{
-      rightWing.stop(vex::brakeType::hold);
-    }
+    // if(Controller1.ButtonR1.pressing()){
+    //   rightWing.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+    // }
+    // else if(Controller1.ButtonR2.pressing()){
+    //   rightWing.spin(vex::directionType::rev, 100, vex::velocityUnits::pct);
+    // }
+    // else{
+    //   rightWing.stop(vex::brakeType::hold);
+    // }
     wait(20, msec); // Cooldown to prevent excess CPU usage and subsequent brain crashing
   } //End While Loop
 

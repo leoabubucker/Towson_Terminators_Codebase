@@ -15,6 +15,7 @@ extern motor intake;
 extern motor puncher;
 extern motor leftWing;
 extern motor rightWing;
+extern motor puncher2;
 extern motor_group allMotors;
 extern motor_group driveMotors;
 extern motor_group nonDriveMotors;

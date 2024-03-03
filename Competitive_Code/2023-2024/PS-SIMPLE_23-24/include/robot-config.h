@@ -12,6 +12,7 @@ extern motor leftBack;
 extern motor rightFront;
 extern motor rightBack;
 extern motor intake;
+extern motor puncher2;
 extern motor puncher;
 extern motor leftWing;
 extern motor rightWing;

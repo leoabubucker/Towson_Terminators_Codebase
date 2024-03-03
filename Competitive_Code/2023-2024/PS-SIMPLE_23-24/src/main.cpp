@@ -58,7 +58,8 @@ void pre_auton(void) {
 
 void autonomous(void) 
 { 
-  puncher.spinFor(25000, vex::rotationUnits::deg, 75, vex::velocityUnits::pct, true);  
+  puncher.spinFor(25000, vex::rotationUnits::deg, 75, vex::velocityUnits::pct, false);  
+  puncher2.spinFor(25000, vex::rotationUnits::deg, 75, vex::velocityUnits::pct, true);  
 }
 
 void usercontrol(void) {
