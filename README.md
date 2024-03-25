@@ -26,8 +26,9 @@ As per the MIT License, all/any part(s) of this codebase may be forked and modif
 ## Contributors
 - Leo Abubucker (Creator and Programmer 2021-2025)
 
-## License
+## Software License
 [MIT](https://choosealicense.com/licenses/mit/)
+
 Copyright (c) 2024 Leo Abubucker
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
