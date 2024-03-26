@@ -10,6 +10,7 @@ This codebase has been created primarily for the following reasons:
 1. To allow our documenters to readily incorporate code into engineering notebooks.
 2. To serve as guidance for future programmers on our team and maybe beyond.
 3. To serve as a historical record of our team's C++ programming.
+
 As per the MIT License, all/any part(s) of this codebase may be forked and modified for use. Please read the notes on directory structure and 2021-2022 code below for guidance and a video tutorial that provides details on using/modifying this codebase will be coming soon. We hope this codebase helps guide you on your programming journey! 
 
 ## Directory Structure
