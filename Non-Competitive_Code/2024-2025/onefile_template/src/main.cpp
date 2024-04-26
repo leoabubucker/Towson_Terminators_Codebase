@@ -142,7 +142,7 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
-  bool puncherState = false;
+  bool puncherState = true; ///TTTTTTEEEESSSTTT
   bool puncherLastState = false;
 
   // User control code here, inside the loop
