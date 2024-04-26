@@ -22,7 +22,7 @@ As per the MIT License, all/any part(s) of this codebase may be forked and modif
  - C++ Code execution always starts in the main.cpp file. 
 
 ## A Note About 2021-2022 Code
-2021-2022 code was written in the now deprecated VEXcode Pro V5 application and can be either read in the app (if still available) or imported via the GUI available in the VEX Robotics extension in VScode. Download link for the VEXcode Pro V5 application (if still available): https://www.vexrobotics.com/vexcode/install/v5. Make sure to get the "VEXcode Pro V5" not the "VEXcode V5 (Blocks and Text)."
+2021-2022 code was written in the now deprecated VEXcode Pro V5 application and can be either read in the app (if still available) or imported via the GUI available in the VEX Robotics extension in VScode. Download link for the VEXcode Pro V5 application (if still available): [VEXcode Pro V5](https://www.vexrobotics.com/vexcode/install/v5). Make sure to get the "VEXcode Pro V5" not the "VEXcode V5 (Blocks and Text)."
 
 ## Contributors
 - Leo Abubucker (Creator and Programmer 2021-2025)
