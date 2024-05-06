@@ -8,8 +8,9 @@
 /*----------------------------------------------------------------------------*/
 
 #include "vex.h"
-
+#include <string>
 using namespace vex;
+using namespace std;
 
 // A global instance of competition
 competition Competition;
@@ -27,9 +28,31 @@ motor rightBack = motor(PORT10, ratio18_1, true);
 motor rightFront = motor(PORT20, ratio18_1, true);
 motor_group allMotors = motor_group(flexwheelIntake, chainIntake, leftArm, rightArm, leftBack, leftFront, rightBack, rightFront);
 motor_group driveMotors = motor_group(leftBack, leftFront, rightBack, rightFront);
+motor_group leftDriveMotors = motor_group(leftFront, leftBack);
+motor_group rightDriveMotors = motor_group(rightFront, rightBack);
 motor_group nonDriveMotors = motor_group(flexwheelIntake, chainIntake, leftArm, rightArm);
 motor_group intakeMotors = motor_group(flexwheelIntake, chainIntake);
 motor_group armMotors = motor_group(leftArm, rightArm);
+drivetrain robotDrive = drivetrain(leftDriveMotors, rightDriveMotors, 220, 406, 406, vex::distanceUnits::mm, 0.5); //vex::drivetrain::drivetrain	(	motor_group leftMotors, motor_group rightMotors, double 	wheelTravel = wheel circumference, double trackWidth = middle of left wheel to middle of right wheel, double 	wheelBase = middle of front wheel to middle of back wheel, distanceUnits unit = distanceUnits::mm, double	externalGearRatio = nondriven gear / driven gear)		
+
+void drive(int inches, std::string direction){
+  if(direction == "fwd"){
+    robotDrive.driveFor(vex::directionType::fwd, inches, vex::distanceUnits::in);
+  }
+  else{
+    robotDrive.driveFor(vex::directionType::rev, inches, vex::distanceUnits::in);
+  }
+}
+
+void turn(int degrees, std::string direction){
+  if(direction == "left"){
+    robotDrive.turnFor(vex::turnType::left, degrees, vex::rotationUnits::deg);
+  }
+  else{
+    robotDrive.turnFor(vex::turnType::right, degrees, vex::rotationUnits::deg);
+  }
+}
+
 
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
@@ -47,6 +70,7 @@ void pre_auton(void) {
   armMotors.setVelocity(50, vex::velocityUnits::pct);
   allMotors.setTimeout(5, vex::timeUnits::sec);
   nonDriveMotors.setStopping(vex::brakeType::hold);
+  robotDrive.setTurnVelocity(50, vex::velocityUnits::pct);
   allMotors.resetPosition();
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
@@ -63,9 +87,10 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 
 void autonomous(void) {
-  // ..........................................................................
-  // Insert autonomous user code here.
-  // ..........................................................................
+  drive(24, "fwd");
+  turn(90, "left");
+  drive(12, "rev");
+  turn(45, "right");
 }
 
 /*---------------------------------------------------------------------------*/
