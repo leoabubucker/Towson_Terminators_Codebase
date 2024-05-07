@@ -33,7 +33,7 @@ motor_group rightDriveMotors = motor_group(rightFront, rightBack);
 motor_group nonDriveMotors = motor_group(flexwheelIntake, chainIntake, leftArm, rightArm);
 motor_group intakeMotors = motor_group(flexwheelIntake, chainIntake);
 motor_group armMotors = motor_group(leftArm, rightArm);
-drivetrain robotDrive = drivetrain(leftDriveMotors, rightDriveMotors, 220, 406, 406, vex::distanceUnits::mm, 0.5); //vex::drivetrain::drivetrain	(	motor_group leftMotors, motor_group rightMotors, double 	wheelTravel = wheel circumference, double trackWidth = middle of left wheel to middle of right wheel, double 	wheelBase = middle of front wheel to middle of back wheel, distanceUnits unit = distanceUnits::mm, double	externalGearRatio = nondriven gear / driven gear)		
+drivetrain robotDrive = drivetrain(leftDriveMotors, rightDriveMotors, 220, 317.5, 317.5, vex::distanceUnits::mm, 0.75); //vex::drivetrain::drivetrain	(	motor_group leftMotors, motor_group rightMotors, double	wheelTravel = wheel circumference, double trackWidth = middle of left wheel to middle of right wheel, double 	wheelBase = middle of front wheel to middle of back wheel, distanceUnits unit = distanceUnits::mm, double	externalGearRatio = 36:48 (driven gear:driver gear))		
 
 void drive(int inches, std::string direction){
   if(direction == "fwd"){
