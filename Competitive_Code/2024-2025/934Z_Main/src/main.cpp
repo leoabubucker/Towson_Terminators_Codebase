@@ -9,8 +9,9 @@
 
 #include "vex.h"
 #include <string>
+#include <iostream>
+#include <sstream>
 using namespace vex;
-using namespace std;
 
 // A global instance of competition
 competition Competition;
@@ -18,42 +19,88 @@ competition Competition;
 // define your global instances of motors and other devices here
 brain Brain;
 controller Controller1 = controller(primary);
-motor flexwheelIntake = motor(PORT12, ratio18_1, false);
+// motor flexwheelIntake = motor(PORT12, ratio18_1, false);
 motor chainIntake = motor(PORT17, ratio18_1, false);
 motor leftArm = motor(PORT13, ratio36_1, false);
 motor rightArm = motor(PORT18, ratio36_1, true);
-motor leftBack = motor(PORT5, ratio18_1, false);
-motor leftFront = motor(PORT11, ratio18_1, false);
-motor rightBack = motor(PORT10, ratio18_1, true);
-motor rightFront = motor(PORT20, ratio18_1, true);
-motor_group allMotors = motor_group(flexwheelIntake, chainIntake, leftArm, rightArm, leftBack, leftFront, rightBack, rightFront);
+motor leftBack = motor(PORT5, ratio18_1, true);
+motor leftFront = motor(PORT11, ratio18_1, true);
+motor rightBack = motor(PORT10, ratio18_1, false);
+motor rightFront = motor(PORT20, ratio18_1, false);
+motor_group allMotors = motor_group(chainIntake, leftArm, rightArm, leftBack, leftFront, rightBack, rightFront);
 motor_group driveMotors = motor_group(leftBack, leftFront, rightBack, rightFront);
 motor_group leftDriveMotors = motor_group(leftFront, leftBack);
 motor_group rightDriveMotors = motor_group(rightFront, rightBack);
-motor_group nonDriveMotors = motor_group(flexwheelIntake, chainIntake, leftArm, rightArm);
-motor_group intakeMotors = motor_group(flexwheelIntake, chainIntake);
+motor_group nonDriveMotors = motor_group(chainIntake, leftArm, rightArm);
+// motor_group intakeMotors = motor_group(flexwheelIntake, chainIntake);
 motor_group armMotors = motor_group(leftArm, rightArm);
 drivetrain robotDrive = drivetrain(leftDriveMotors, rightDriveMotors, 220, 317.5, 317.5, vex::distanceUnits::mm, 0.75); //vex::drivetrain::drivetrain	(	motor_group leftMotors, motor_group rightMotors, double	wheelTravel = wheel circumference, double trackWidth = middle of left wheel to middle of right wheel, double 	wheelBase = middle of front wheel to middle of back wheel, distanceUnits unit = distanceUnits::mm, double	externalGearRatio = 36:48 (driven gear:driver gear))		
+ 
+//NON FUNCTIONAL AUTON
 
-void drive(int inches, std::string direction){
-  if(direction == "fwd"){
-    robotDrive.driveFor(vex::directionType::fwd, inches, vex::distanceUnits::in);
-  }
-  else{
-    robotDrive.driveFor(vex::directionType::rev, inches, vex::distanceUnits::in);
-  }
+// void drive(int inches, std::string direction){
+//   if(direction == "fwd"){
+//     robotDrive.driveFor(vex::directionType::fwd, inches, vex::distanceUnits::in);
+//   }
+//   else{
+//     robotDrive.driveFor(vex::directionType::rev, inches, vex::distanceUnits::in);
+//   }
+// }
+
+// void turn(int degrees, std::string direction){
+//   if(direction == "left"){
+//     robotDrive.turnFor(vex::turnType::left, degrees, vex::rotationUnits::deg);
+//   }
+//   else{
+//     robotDrive.turnFor(vex::turnType::right, degrees, vex::rotationUnits::deg);
+//   }
+// }
+
+void turn(int degrees, std::string direction, int velocity){
+    //Constants determined through testing
+    const int motorDegreesFor90DegreeTurn = 362;
+    const int motorDegreesPerDegreeTurn = motorDegreesFor90DegreeTurn/90;
+
+    //Calculates the degrees the motors have to turn to turn the robot degrees Degrees
+    int motorDegrees = motorDegreesPerDegreeTurn * degrees;
+
+    //Inverts spin direction to turn left
+    if(direction == "left"){
+        motorDegrees *= -1;
+    }
+    leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+    leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+    rightFront.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+    rightBack.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
 }
 
-void turn(int degrees, std::string direction){
-  if(direction == "left"){
-    robotDrive.turnFor(vex::turnType::left, degrees, vex::rotationUnits::deg);
-  }
-  else{
-    robotDrive.turnFor(vex::turnType::right, degrees, vex::rotationUnits::deg);
-  }
+/*------------------------------------------------------------------------------------*/
+/*                                                                                    */
+/*                              Drive Function                                        */
+/*                                                                                    */
+/*  Drives inches Inches in direction Direction at velocity Velocity based on a       */
+/*  hard-coded const of how many degrees a motor has to turn to drive the robot 24in  */
+/*  (the length/width of one square tile). Hard-coded const found through testing.    */
+/*                                                                                    */
+/*------------------------------------------------------------------------------------*/
+
+void drive(int inches, std::string direction, int velocity){
+    //Constants determined through testing
+    const int motorDegreesFor24Inches = 951;
+    const int motorDegreesPerInch = motorDegreesFor24Inches/24;
+
+    //Calculate the degrees the motors have to turn to drive the robot inches Inches
+    int motorDegrees = motorDegreesPerInch * inches;
+
+    //Inverts spin direction to move backwards
+    if(direction == "rev"){
+        motorDegrees *= -1;
+    }
+    leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+    leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+    rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+    rightBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
 }
-
-
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
 /*                                                                           */
@@ -76,6 +123,14 @@ void pre_auton(void) {
   // Example: clearing encoders, setting servo positions, ...
 }
 
+template <typename T>
+std::string to_string(T value)
+{
+    std::ostringstream os ;
+    os << value ;
+    return os.str() ;
+}
+
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
 /*                              Autonomous Task                              */
@@ -87,10 +142,10 @@ void pre_auton(void) {
 /*---------------------------------------------------------------------------*/
 
 void autonomous(void) {
-  drive(24, "fwd");
-  turn(90, "left");
-  drive(12, "rev");
-  turn(45, "right");
+  drive(24, "fwd", 100);
+  turn(90, "left", 50);
+  drive(12, "rev", 100);
+  turn(45, "right", 50);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -108,32 +163,28 @@ void usercontrol(void) {
   while (1) {
     //Drive Controls
     leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
-    leftBack.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
+     leftBack.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
     rightFront.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct); 
     rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct); 
 
+    //Testing Degree Values for Drive
+    Brain.Screen.print(leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg) + rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg));
+   
+    //Testing Degree Values for Arm
+    //Brain.Screen.print(armMotors.position(vex::rotationUnits::deg));
+    if(Controller1.ButtonUp.pressing()){
+      Brain.Screen.clearScreen();
+    }
 
     //Intake Controls
-    if(Controller1.ButtonX.pressing() && Controller1.ButtonL1.pressing()){
-      flexwheelIntake.spin(vex::directionType::fwd);
-    }
-    else if(Controller1.ButtonX.pressing() && Controller1.ButtonL2.pressing()){
-      flexwheelIntake.spin(vex::directionType::rev);
-    }
-    else if(Controller1.ButtonA.pressing() && Controller1.ButtonL1.pressing()){
+    if(Controller1.ButtonL1.pressing()){
       chainIntake.spin(vex::directionType::fwd);
     }
-    else if(Controller1.ButtonA.pressing() && Controller1.ButtonL2.pressing()){
+    else if(Controller1.ButtonL2.pressing()){
       chainIntake.spin(vex::directionType::rev);
     }
-    else if(Controller1.ButtonL1.pressing()){
-      intakeMotors.spin(vex::directionType::rev);
-    }
-    else if(Controller1.ButtonL2.pressing()){
-      intakeMotors.spin(vex::directionType::rev);
-    }
     else{
-      intakeMotors.stop();
+      chainIntake.stop();
     }
 
     //Arm Controls
