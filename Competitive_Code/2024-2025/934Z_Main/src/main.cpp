@@ -131,6 +131,96 @@ std::string to_string(T value)
     return os.str() ;
 }
 
+// Constant Settings
+double kP = 1.0;
+double kI = 0.0;
+double kD = 0.0;
+
+double turnkP = 1.0;
+double turnkI = 0.0;
+double turnkD = 0.0;
+
+//Dynamic Settings
+int desiredValue = 600;
+int desiredTurnValue = 0;
+
+int error; //Sensor Value - Desired Value : Position
+int prevError = 0; //Position 20msec ago
+int derivative;
+int totalError = 0;//totalError += error
+
+int turnError; //Sensor Value - Desired Value : Position
+int turnPrevError = 0; //Position 20msec ago
+int turnDerivative;
+int turnTotalError = 0;//totalError += error
+
+bool resetDriveSensors = false;
+
+bool enableDrivePID = true;
+
+int drivePID(){
+  while(enableDrivePID){
+
+    if(resetDriveSensors){
+      resetDriveSensors = false;
+      driveMotors.resetPosition();
+    }
+    //Get Motor Positions
+    int lfPosition = leftFront.position(vex::rotationUnits::deg);
+    int rfPosition = rightFront.position(vex::rotationUnits::deg);
+    int lbPosition = leftBack.position(vex::rotationUnits::deg);
+    int rbPosition = rightBack.position(vex::rotationUnits::deg);
+
+  ////////////////////////////////////////////////////////////////
+  //                  Lateral Movement PID                      //
+  ////////////////////////////////////////////////////////////////
+
+
+    //Get Avg Motor Positions
+    int frontMotorAvgPosition = (lfPosition + rfPosition)/2;
+    int backMotorAvgPosition = (lbPosition + rbPosition)/2;
+
+    //Potential
+    error = backMotorAvgPosition - desiredValue;
+
+    //Derivative
+    derivative = error - prevError;
+
+    //Integral
+    totalError += error;
+
+    double lateralMotorDegrees = (error * kP + derivative * kD + totalError * kI)/360;
+
+  ////////////////////////////////////////////////////////////////
+  //                  Turn Movement PID                         //
+  ////////////////////////////////////////////////////////////////
+
+    //Get Avg Motor Positions
+    int frontMotorTurnDifference= lfPosition - rfPosition;
+    int backMotorTurnDifference = lbPosition - rbPosition;
+
+    //Potential
+    turnError = backMotorTurnDifference - desiredValue;
+
+    //Derivative
+    turnDerivative = turnError - turnPrevError;
+
+    //Integral
+    turnTotalError += turnError;
+
+    double turnMotorDegrees = (turnError * turnkP + turnDerivative * turnkD + turnTotalError * turnkI)/360;
+
+    leftDriveMotors.spin(vex::directionType::fwd, lateralMotorDegrees + turnMotorDegrees, vex::voltageUnits::volt);
+    rightDriveMotors.spin(vex::directionType::fwd, lateralMotorDegrees - turnMotorDegrees, vex::voltageUnits::volt);
+
+
+    prevError = error;
+    turnPrevError = turnError;
+    vex::task::sleep(20);
+  }
+  return 1;
+}
+
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
 /*                              Autonomous Task                              */
@@ -142,11 +232,20 @@ std::string to_string(T value)
 /*---------------------------------------------------------------------------*/
 
 void autonomous(void) {
-  drive(24, "fwd", 100);
-  turn(90, "left", 50);
-  drive(12, "rev", 100);
-  turn(45, "right", 50);
+  // drive(24, "fwd", 100);
+  // turn(90, "left", 50);
+  // drive(12, "rev", 100);
+  // turn(45, "right", 50);
+  vex::task PIDTask(drivePID);
+
+  resetDriveSensors = true;
+  desiredValue = 600;
+  vex::task::sleep(100);
+
+  resetDriveSensors = true;
+  desiredTurnValue = 300;
 }
+
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
@@ -159,6 +258,7 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
+  enableDrivePID = false;
   // User control code here, inside the loop
   while (1) {
     //Drive Controls
