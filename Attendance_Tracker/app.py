@@ -14,10 +14,12 @@ customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "gre
 #Icon Definitions
 close_btn_img = customtkinter.CTkImage(light_image=Image.open("Icons/close_btn_light.png"), dark_image=Image.open("Icons/close_btn_dark.png"), size=(20,20))
 left_arrow_img = customtkinter.CTkImage(dark_image=Image.open("Icons/left_arrow.png"), light_image=None, size=(60, 80))
+right_arrow_img = customtkinter.CTkImage(dark_image=Image.open("Icons/right_arrow.png"), light_image=None, size=(60, 80))
 
 #Global Definitions
 activeFrameLst = []
 activeUsers = []
+activeUserFrames = []
 
 class SignUpWindow(customtkinter.CTkFrame):
     """
@@ -380,6 +382,196 @@ class AttendanceLog(customtkinter.CTkFrame):
         #Loads success notification
         loadNotification(self.container, "lime green", "black", "Time Out Added For " + user.first_name, 2000, rely=0.1)
 
+class UserProfile(customtkinter.CTkFrame):
+    """
+    This class represents the User Profile frame and associated functionality. 
+    
+    Inherits: customtkinter.CTkFrame
+
+    Attributes:
+        container (customtkinter.CTkFrame):  UserDashboard() instance - the parent container of self
+        userID (int): ID of the given user
+        user (User): User() instance of the given user
+        attendanceInfo (list): list that starts with the header row for attendance, to be populated with data correlating to the headers
+        absenceInfo (list): list that starts with the header row for absences, to be populated with data correlating to the headers
+        backBtn (customtkinter.CTkButton): button that returns user to the home page of the application
+
+    """
+
+    def __init__(self, container, userID):
+        """
+        The constructor for the UserProfile class that creates and places GUI elements.
+
+        Parameters: 
+            self (customtkinter.CTkFrame): the CTkFrame instance of UserProfile
+            container (customtkinter.CTkFrame): UserDashboard() instance - the parent container of self
+            userID (int): ID of the given user
+
+        Returns: void
+        """
+
+        super().__init__(container)
+        self.container = container
+        self.userID = userID
+        self.place(relwidth=1, relheight=1)
+        activeFrameLst.append(self)
+        self.user = None
+        self.attendanceInfo = [("Day", "Time In", "Time Out")]
+        self.absenceInfo = [("Day", "Is Excused")]
+        self.backBtn=customtkinter.CTkButton(self, image = left_arrow_img, fg_color="transparent", text=None, command=lambda:[forgetAllFrames()])
+        self.backBtn.place(relwidth=0.05, relheight=0.1, relx=0.01, rely=0.02)
+
+        #Calls fetchUserDetails() to populate lists with respective data
+        self.fetchUserDetails()
+
+    def fetchUserDetails(self):
+        """
+        Retrieves necessary data from tables and populates it into predefined lists
+
+        Parameters: 
+            self (customtkinter.CTkFrame): the CTkFrame instance of UserProfile
+
+        Returns: void
+        """
+
+        conn = sqlite3.connect("main.sqlite")
+        cursor = conn.cursor()
+
+        userInfoRes = cursor.execute("SELECT * FROM users WHERE id=?", [self.userID])
+        self.user = User(*userInfoRes.fetchall()[0])
+
+        attendanceInfoRes = cursor.execute("SELECT day, time_in, time_out FROM attendance WHERE user_id=? ORDER BY id DESC", [self.userID])
+        self.attendanceInfo.extend(attendanceInfoRes.fetchall())
+
+        absenceInfoRes = cursor.execute("SELECT day, isExcused FROM absences WHERE user_id=? ORDER BY id DESC", [self.userID])
+        self.absenceInfo.extend(absenceInfoRes.fetchall())
+        self.absenceInfo = self.absenceInfo
+
+        #Converts binary boolean values to text
+        for iter, val in enumerate(self.absenceInfo):
+            self.absenceInfo[iter] = list(val)
+            if(val[1] == 0):
+                self.absenceInfo[iter][1] = "No"
+            elif(val[1] == 1):
+                self.absenceInfo[iter][1] = "Yes"
+
+        conn.close()
+
+        #Calls loadProfile() to display stored data
+        self.loadProfile()
+
+    def loadProfile(self):
+        """
+        Creates and displays tables and other GUI elements to display user info
+
+        Parameters: 
+            self (customtkinter.CTkFrame): the CTkFrame instance of UserProfile
+
+        Returns: void
+        """
+
+        nameTxt = customtkinter.CTkLabel(self, text=self.user.first_name + " " + self.user.last_name, font=generateFont('Roboto', 20, weight='bold'))
+        nameTxt.place(relwidth=1, relheight=0.05, rely=0.02)
+        nameTxt.lower(belowThis=self.backBtn)
+
+        userInfoHeaderLabel = customtkinter.CTkLabel(self, text="User Info", font=generateFont('Roboto', 15, slant="italic"))
+        userInfoHeaderLabel.place(rely=0.12, relwidth=0.3, relheight=0.03)
+        userInfoTableFrame = customtkinter.CTkFrame(self)
+        userInfoTableFrame.place(rely=0.15, relwidth=0.3, relheight=1)
+        userInfoTable = CTkTable.CTkTable(userInfoTableFrame, row=6, column=2, orientation="vertical", header_color="maroon", values=[["ID", "First Name", "Last Name", "Grade", "Phone Number", "Team"], [self.user.id, self.user.first_name, self.user.last_name, self.user.grade, self.user.phone_number, self.user.team]])
+        userInfoTable.pack(expand=False, fill="x", padx=20, pady=20, side="top")
+
+        attendanceHeaderLabel = customtkinter.CTkLabel(self, text="Attendance Log", font=generateFont('Roboto', 15, slant="italic"))
+        attendanceHeaderLabel.place(rely=0.12, relwidth=0.3, relheight=0.03, relx=0.3)
+        attendanceTableFrame = customtkinter.CTkFrame(self)
+        attendanceTableFrame.place(relx = 0.3, rely=0.15, relwidth=0.3, relheight=1)
+        attendanceTable = CTkTable.CTkTable(attendanceTableFrame, row=len(self.attendanceInfo), column=3, values=self.attendanceInfo, header_color="maroon")
+        attendanceTable.pack(expand=False, fill="x", padx=20, pady=20, side="top")
+
+        absenceHeaderLabel = customtkinter.CTkLabel(self, text="Absences Log", font=generateFont('Roboto', 15, slant="italic"))
+        absenceHeaderLabel.place(rely=0.12, relwidth=0.3, relheight=0.03, relx=0.6)
+        absenceTableFrame = customtkinter.CTkFrame(self)
+        absenceTableFrame.place(relx = 0.6, rely=0.15, relwidth=0.3, relheight=1)
+        absenceTable = CTkTable.CTkTable(absenceTableFrame, row=len(self.absenceInfo), column=2, values=self.absenceInfo, header_color="maroon")
+        absenceTable.pack(expand=False, fill="x", padx=20, pady=20, side="top")
+
+class UserDashboard(customtkinter.CTkFrame):
+    """
+    This class represents the User Dashboard frame and associated functionality. 
+    
+    Inherits: customtkinter.CTkFrame
+
+    Attributes:
+        container (customtkinter.CTkFrame):  UserDashboard() instance - the parent container of self
+        userNames (list): List that holds the full names of all users, ordered by their ID
+        ids (list): List that holds the IDs of all users, ordered by their ID
+
+    """
+
+    def __init__(self, container):
+        """
+        The constructor for the UserDashboard class that creates and places GUI elements.
+
+        Parameters: 
+            self (customtkinter.CTkFrame): the CTkFrame instance of UserCard
+            container (customtkinter.CTkFrame): Main() instance - the parent container of self
+
+        Returns: void
+        """
+
+        super().__init__(container)
+        self.container = container
+        self.place(relwidth=1, relheight=1)
+        activeFrameLst.append(self)
+
+        backBtn=customtkinter.CTkButton(self, image = left_arrow_img, fg_color="transparent", text=None, command=lambda:[forgetAllFrames()])
+        backBtn.place(relwidth=0.05, relheight=0.1, relx=0.01, rely=0.02)
+
+        #Retrieves and stores names and IDs
+        conn = sqlite3.connect("main.sqlite")
+        cursor = conn.cursor()
+        userRes = cursor.execute("SELECT first_name, last_name from users")
+        self.userNames = [name[0] + " " + name[1] for name in userRes.fetchall()]
+        IDRes = cursor.execute("SELECT id from users ORDER BY id ASC")
+        self.ids = [id[0] for id in IDRes.fetchall()]
+        conn.close()
+
+        #Loads a UserCard() instance for each user
+        self.loadUserCards()
+
+    def loadUserCards(self, startPoint = 0):
+        """
+        Recursive function that loads UserCard() instances for each User and provides buttons to navigate different pages of UserCard() instances
+
+        Parameters: 
+            self (customtkinter.CTkFrame): the CTkFrame instance of UserCard
+            startPoint (int): index in self.userNames of where to start generating cards from (default = 0)
+
+        Returns: void
+        """
+
+        relx = 0.1
+        rely = 0.15
+
+        for i, name in enumerate(self.userNames):
+            prevBtn=customtkinter.CTkButton(self, image= left_arrow_img, fg_color="transparent", text=None, command=lambda:[card.forgetItems(), self.loadUserCards(i-12)])
+
+            if(startPoint > 0):
+                prevBtn.place(relwidth = 0.05, relheight=0.1, relx=0.01, rely=0.45)
+            else:
+                prevBtn.place_forget()
+            if(i >= startPoint):
+                card = UserCard(self, relx, rely, name, self.ids[i])
+                card.placeItems()
+                relx += 0.2
+                if(relx > 0.7):
+                    relx = 0.1
+                    rely += 0.3 
+                if(rely > 0.75):
+                    #Creates a new page
+                    nextBtn=customtkinter.CTkButton(self, image= right_arrow_img, fg_color="transparent", text=None, command=lambda:[card.forgetItems(), self.loadUserCards(i)])
+                    nextBtn.place(relwidth = 0.05, relheight=0.1, relx=0.94, rely=0.45)
+
 class Main(customtkinter.CTk):
     """  
     This class represents the home GUI Screen (first screen launched upon execution) and associated functionality.
@@ -390,6 +582,7 @@ class Main(customtkinter.CTk):
         titleUI (customtkinter.CTkLabel): Title text of the screen
         attendanceLogBtn (customtkinter.CTkButton): Button that loads an instance of the AttendanceLog frame
         generateExcelBtn (customtkinter.CTkButton): Button that calls the genExcelFiles() function
+        userDashboardBtn (customtkinter.CTkButton): Button that loads an instance of the UserDashboard frame
         copyrightNotice (customtkinter.CTkLabel): Copyright text of the screen
         licenseNotice (customtkinter.CTkLabel): License text (not link) of the screen
         licenseLink (customtkinter.CTkLabel): MIT License link of the screen
@@ -407,12 +600,13 @@ class Main(customtkinter.CTk):
 
         #Initializations and Placement
         super().__init__()
-        self.title("Attendance Tracker v1.0")
+        self.title("Attendance Tracker v1.1")
         self.geometry("%dx%d+0+0" % (self.winfo_screenwidth(), self.winfo_screenheight()))
+        self.protocol("WM_DELETE_WINDOW", lambda:[quitApp(self)])
         self.initDb()
 
         #Home UI
-        self.titleUI = customtkinter.CTkLabel(self, text="Attendance Tracker v1.0", font=generateFont('Roboto', 64))
+        self.titleUI = customtkinter.CTkLabel(self, text="Attendance Tracker v1.0 - DEV", font=generateFont('Roboto', 64))
         self.titleUI.place(relx=0, rely=0.1, relwidth=1)
 
         self.attendanceLogBtn = customtkinter.CTkButton(self, text='Launch Attendance Log', font=generateFont('Roboto', 20), command=lambda:[loadFrame(AttendanceLog, self, True)])
@@ -420,6 +614,9 @@ class Main(customtkinter.CTk):
 
         self.generateExcelBtn = customtkinter.CTkButton(self, text='Generate Excel Files', font=generateFont('Roboto', 20), command=lambda:[genExcelFiles(self)])
         self.generateExcelBtn.place(relx=0.4, rely=0.4, relwidth=0.2, relheight=0.05)
+
+        self.userDashboardBtn = customtkinter.CTkButton(self, text='View User Dashboard', font=generateFont('Roboto', 20), command=lambda:[forgetAllFrames(), UserDashboard(container=self)])
+        self.userDashboardBtn.place(relx=0.4, rely=0.5, relwidth=0.2, relheight=0.05)
 
         self.copyrightNotice = customtkinter.CTkLabel(self, text="Copyright © 2024 Leo Abubucker", font=generateFont('Roboto', 20))
         self.copyrightNotice.place(relx=0.42, rely=0.8)
@@ -473,6 +670,21 @@ class Main(customtkinter.CTk):
             )
         ''')
 
+        #Create the absences table if not exists
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS absences (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                day TIMESTAMP NOT NULL,
+                user_id INTEGER NOT NULL,
+                user_first_name TEXT NOT NULL,
+                user_last_name TEXT NOT NULL,
+                isExcused BOOLEAN NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+                FOREIGN KEY (user_first_name) REFERENCES users (first_name)
+                FOREIGN KEY (user_last_name) REFERENCES users (last_name)
+            )
+        ''')
+
         # Commit the changes and close the connection
         conn.commit()
         conn.close()
@@ -516,6 +728,84 @@ class User():
         self.phone_number = phone_number
         self.team = team
         self.row = -1
+
+class UserCard(customtkinter.CTkFrame):
+    """
+    This class represents a User Card shown in the UserDashboard frame and associated functionality. 
+    
+    Inherits: customtkinter.CTkFrame
+
+    Attributes:
+        container (customtkinter.CTkFrame):  UserDashboard() instance - the parent container of self
+        relx (double): relx position of the frame 
+        rely (double): rely position of the frame
+        id (int): user's ID
+        nameTxt (customtkinter.CTkLabel): label item to display name       
+    """
+
+    def __init__(self, container, relx, rely, name, id):
+        """
+        The constructor for the UserCard class that creates and places GUI elements of the UserCard in the UserDashboard.
+
+        Parameters: 
+            self (customtkinter.CTkFrame): the CTkFrame instance of UserCard
+            container (customtkinter.CTkFrame): UserDashboard() instance - the parent container of self
+            relx (double): relx position of the frame
+            rely (double): rely position of the frame
+            name (str): user's name to display
+            id (int): user's ID
+
+        Returns: void
+        """
+
+        super().__init__(container)
+        self.container = container
+        self.relx = relx
+        self.rely = rely
+        self.id = id
+        self.nameTxt = customtkinter.CTkLabel(self, text=name, font=generateFont('Roboto', 15))
+        self.bind("<Button-1>", lambda e:self.onClickEvent(e))
+        self.nameTxt.bind("<Button-1>", lambda e:self.onClickEvent(e))
+
+    def placeItems(self):
+        """
+        Places this and its text on the UserDashboard.
+
+        Parameters: 
+            self (customtkinter.CTkFrame): the CTkFrame instance of UserCard
+
+        Returns: void
+        """
+
+        activeUserFrames.append(self)
+        self.place(relwidth=0.15, relheight=0.15, relx=self.relx, rely=self.rely)
+        self.nameTxt.place(relwidth=1, relheight=0.1, rely=0.45)
+
+    def forgetItems(self):
+        """
+        Removes all frames from the Application.
+
+        Parameters: 
+            self (customtkinter.CTkFrame): the CTkFrame instance of UserCard
+
+        Returns: void
+        """
+
+        for frame in activeUserFrames:
+            frame.place_forget()
+
+    def onClickEvent(self, event):
+        """
+        Launches a User Profile instance of the given user, of which the User Card which was clickec belongs.
+
+        Parameters: 
+            self (customtkinter.CTkFrame): the CTkFrame instance of UserCard
+            event (tkinter event): Not used, but necessary for calling this function on mouse click
+
+        Returns: void
+        """
+
+        UserProfile(self.container, self.id)
 
 def generateFont(fontName:str, fontSize:int, weight:str = 'normal', slant:str = 'roman', underline:bool = False, overstrike:bool = False):
     """
@@ -599,8 +889,13 @@ def genExcelFiles(container):
         attendanceDf_read = pandas.read_sql(attendanceSqlQuery, conn)
         attendanceDf_read.to_excel("Attendance.xlsx")
 
+        #Uses pandas to read specific queried info from the absences database and write it to "Absences.xlsx"
+        absencesSqlQuery = "SELECT day, user_first_name, user_last_name from absences;"
+        absencesDf_read = pandas.read_sql(absencesSqlQuery, conn)
+        absencesDf_read.to_excel("Absences.xlsx")
+
         #Loads success notification 
-        loadNotification(container, "lime green", "black", "Success - Attendance.xlsx & Members.xlsx Created", 2000)
+        loadNotification(container, "lime green", "black", "Success - Members.xlsx, Attendance.xlsx, & Absences.xlsx Created", 2000)
 
     except Exception as e:
         #Continues execution if there are any exceptions and prints a fail notification with the exception details
@@ -627,6 +922,68 @@ def loadNotification(container, bgColor:str, textColor:str, text:str, msec:int, 
     notification = customtkinter.CTkLabel(master=container, bg_color=bgColor, text_color=textColor, font=generateFont('Roboto', 12), text=text)
     notification.place(relwidth=0.2, relheight=0.05, relx=0.8, rely=rely)
     notification.after(ms=msec, func=lambda:[notification.place_forget()])
+
+def quitApp(container):
+    """
+    Runs when the close button is pressed, providing the user with a popup confirming their action.
+
+    Parameters:
+        container (customtkinter.CTkFrame or customtkinter.CTk): parent container of the created frame
+
+    Returns: void
+    """
+
+    popup = customtkinter.CTkFrame(master=container)
+    activeFrameLst.append(popup)
+    popup.place(relwidth=0.5, relheight=0.4, relx=0.25, rely=0.25)
+
+    closeBtn=customtkinter.CTkButton(master=popup, image = close_btn_img, fg_color="transparent", text=None, command=lambda:[forgetFrame(popup)])
+    closeBtn.place(relwidth=0.1, relheight=0.1, relx=0.9, rely=0.02)
+
+    confirmationTxt = customtkinter.CTkLabel(master=popup, text="Are you sure you want to quit the app?\nIf there is at least one logged user, all unlogged users will be marked absent.", font=generateFont('Roboto', 20))
+    confirmationTxt.place(rely=0.2, relwidth=1)
+
+    #Runs the logAbsences function
+    yesBtn = customtkinter.CTkButton(master=popup, text="Yes", command=lambda:logAbsences(container))
+    yesBtn.place(relx=0.25, rely=0.5)
+
+    #Skips the logAbsences function, immediately exits the app
+    noBtn = customtkinter.CTkButton(master=popup, text="No", command=lambda:forgetFrame(popup))
+    noBtn.place(relx=0.5, rely=0.5)
+
+def logAbsences(container):
+    """
+    Inserts current day and user info of all users not logged in into the Absences table if at least one user is logged in. Then, quits the app.
+
+    Parameters:
+        container (customtkinter.CTkFrame or customtkinter.CTk): parent container of the created frame
+
+    Returns: void
+    """
+
+    #Retrieves and stores pertinent info
+    conn = sqlite3.connect('main.sqlite')
+    cursor = conn.cursor()
+    userIDRes = cursor.execute("SELECT id FROM users")
+    userIDs = [id[0] for id in userIDRes.fetchall()]
+    currentDay = datetime.date.today()
+    attendedUserIDRes = cursor.execute("SELECT user_id FROM attendance WHERE day=? AND time_out IS NOT NULL", [currentDay])
+    attendedUserIDs = [id[0] for id in attendedUserIDRes.fetchall()] #Logged in Users' IDs
+
+    #Inserts pertinent info into Absences table for users not logged in if at least one user is logged in
+    if(len(attendedUserIDs) > 0):
+        for id in userIDs:
+            if(not id in attendedUserIDs):
+                absentUserInfoRes = cursor.execute("SELECT first_name, last_name FROM users WHERE id=?", [id])
+                absentUserInfo = absentUserInfoRes.fetchone()
+                cursor.execute("INSERT INTO absences (day, user_id, user_first_name, user_last_name, isExcused) VALUES (?, ?, ?, ?, ?)", [currentDay, id, absentUserInfo[0], absentUserInfo[1], False])
+                conn.commit()
+
+    #Closes Database
+    conn.close()
+
+    #Closes Application
+    container.destroy()
 
 #Launches Application
 if __name__ == "__main__":
