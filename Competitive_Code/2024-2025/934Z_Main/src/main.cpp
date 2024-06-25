@@ -326,7 +326,7 @@ void drawGUI(){
       //Coordinates of the R2B1 Auton Btn
     std::map<std::string, int> controlsFrame = {
         {"x-left", 0},
-        {"x-right", 200},
+        {"x-right", 182},
         {"y-top", 0},
         {"y-bottom", 180}
     };
@@ -336,7 +336,7 @@ void drawGUI(){
     //Prints R2B1 Auton in the middle of created btn
     Brain.Screen.setFillColor(maroon);
     Brain.Screen.setPenColor(color::white);
-    Brain.Screen.setCursor(1, 8);
+    Brain.Screen.setCursor(1, 5);
     Brain.Screen.print("Controls:");
     Brain.Screen.setCursor(3, 2);
     Brain.Screen.print("Driving - Tank");
@@ -349,14 +349,14 @@ void drawGUI(){
     Brain.Screen.setCursor(7, 2);
     Brain.Screen.print("Lower Arm - R2");
     Brain.Screen.setCursor(8, 2);
-    Brain.Screen.print("Toggle Manual - Up");
+    Brain.Screen.print("Toggle - Up");
     Brain.Screen.setCursor(9, 2);
     Brain.Screen.print("Update GUIs - X");
 
     //Auton Selector
     autonSelectorFrame = {
         {"x-left", 0},
-        {"x-right", 100},
+        {"x-right", 99},
         {"y-top", 179},
         {"y-bottom", 240}     
     };
@@ -367,21 +367,24 @@ void drawGUI(){
     Brain.Screen.print(autonSelector);
     Brain.Screen.setCursor(11, 2);
     if(waitingForUserInput){
+      Brain.Screen.setPenColor(color::orange);
       Brain.Screen.print("UNLOCKED");
     }
     else{
+      Brain.Screen.setPenColor(color::green);
       Brain.Screen.print("LOCKED");
     }
+    Brain.Screen.setPenColor(color::white);
 
     //Current Mode Display
     std::map <std::string, int> modeDisplayFrame = {
-        {"x-left", 99},
-        {"x-right", 200},
+        {"x-left", 98},
+        {"x-right", 182},
         {"y-top", 179},
         {"y-bottom", 240}     
     };  
     Brain.Screen.drawRectangle(modeDisplayFrame["x-left"], modeDisplayFrame["y-top"], modeDisplayFrame["x-right"] - modeDisplayFrame["x-left"], modeDisplayFrame["y-bottom"] - modeDisplayFrame["y-top"], maroon);
-    Brain.Screen.setCursor(10, 12);
+    Brain.Screen.setCursor(10, 13);
     Brain.Screen.print("Mode: ");
     std::string currentMode;
     if(Competition.isEnabled()){
@@ -408,10 +411,10 @@ void drawGUI(){
 
   //Motor Debug
   std::map <std::string, int> motorDebugFrame = {
-        {"x-left", 199},
-        {"x-right", 480},
+        {"x-left", 181},
+        {"x-right", 479},
         {"y-top", 0},
-        {"y-bottom", 240}     
+        {"y-bottom", 180}     
     };  
   Brain.Screen.drawRectangle(motorDebugFrame["x-left"], motorDebugFrame["y-top"], motorDebugFrame["x-right"] - motorDebugFrame["x-left"], motorDebugFrame["y-bottom"] - motorDebugFrame["y-top"], maroon);
   int row = 3;
@@ -420,7 +423,7 @@ void drawGUI(){
   std::vector<std::vector<std::string>> motorInfo = myMotorCollection.returnValues();
   std::vector<bool> motorConnections = myMotorCollection.isConnected();
   for(int i = 0; i < motorInfo.size(); i++){
-    Brain.Screen.setCursor(row, 21);
+    Brain.Screen.setCursor(row, 20);
     if(motorConnections[i] == true){
       Brain.Screen.setPenColor(color::green);
     }
@@ -451,7 +454,6 @@ void drawGUI(){
       Brain.Screen.setPenColor(color::red);
     }
     Brain.Screen.print(motorInfo[i][6].c_str());
-    //Add color based on temp
     Brain.Screen.print(motorInfo[i][7].c_str());
     Brain.Screen.setPenColor(color::white);
     Brain.Screen.print(motorInfo[i][8].c_str());
@@ -459,6 +461,56 @@ void drawGUI(){
     Brain.Screen.print(motorInfo[i][10].c_str());
     row++;
   }
+  // Brain.Screen.print(Brain.);
+  // Battery and Controller Info
+  std::map <std::string, int> batteryInfoFrame = {
+        {"x-left", 181},
+        {"x-right", 276},
+        {"y-top", 179},
+        {"y-bottom", 240}     
+    };  
+  Brain.Screen.drawRectangle(batteryInfoFrame["x-left"], batteryInfoFrame["y-top"], batteryInfoFrame["x-right"] - batteryInfoFrame["x-left"], batteryInfoFrame["y-bottom"] - batteryInfoFrame["y-top"], maroon);
+  Brain.Screen.setCursor(10, 20);
+  Brain.Screen.print("Battery:");
+  Brain.Screen.setCursor(11, 22);
+  // Brain.Screen.print("%.2f%%", (Brain.Battery.voltage()/Brain.Battery.capacity())*100); 
+  // Brain.Screen.print(" %.2f", Brain.Battery.capacity(pct));
+
+  if(Brain.Battery.capacity() > 80){
+    Brain.Screen.setPenColor(color::green);
+  }
+  else if(Brain.Battery.capacity() > 50){
+    Brain.Screen.setPenColor(color::orange);
+  }
+  else{
+    Brain.Screen.setPenColor(color::red);
+  }
+  Brain.Screen.print("%d%%", Brain.Battery.capacity());
+  Brain.Screen.setPenColor(color::white);
+  // Brain.Screen.print("%");
+  std::map <std::string, int> controllerInfoFrame = {
+        {"x-left", 275},
+        {"x-right", 394},
+        {"y-top", 179},
+        {"y-bottom", 240}     
+    }; 
+  Brain.Screen.drawRectangle(controllerInfoFrame["x-left"], controllerInfoFrame["y-top"], controllerInfoFrame["x-right"] - controllerInfoFrame["x-left"], controllerInfoFrame["y-bottom"] - controllerInfoFrame["y-top"], maroon);
+  Brain.Screen.setCursor(10, 29);
+  Brain.Screen.print("Controller:");
+  Brain.Screen.setCursor(11, 30);
+  if(Controller1.installed()){
+    Brain.Screen.setPenColor(color::green);
+    Brain.Screen.print("CONNECTED");
+  }
+  else{
+    Brain.Screen.setPenColor(color::red);
+    Brain.Screen.print("DISCONNECTED");
+  }
+  Brain.Screen.setPenColor(color::white);
+    //Controller1.installed()
+
+    // Brain.Battery.capacity(vex::percentUnits::pct);
+   
 }
 
 void autonSelection(){
@@ -590,6 +642,7 @@ void autonomous(void) {
 void usercontrol(void) {
   drawGUI();
   enableDrivePID = false;
+  int timeCheck = 0;
   std::string driveConfig = myMotorCollection.checkMotors(); //Checks motor statuses and switches drive mode (4-wheel, front-wheel, rear-wheel, LFRB, RFLB)
   // User control code here, inside the loop
   while (1) {
@@ -620,7 +673,7 @@ void usercontrol(void) {
     //Testing Degree Values for Drive
     // Brain.Screen.print(leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg) + rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg));
    
-    //Testing Degree Values for Arm
+    // Testing Degree Values for Arm
     // Brain.Screen.print(armMotors.position(vex::rotationUnits::deg));
     
     if(Controller1.ButtonB.pressing()){
@@ -631,6 +684,26 @@ void usercontrol(void) {
       driveConfig = myMotorCollection.checkMotors();
       drawGUI();
     }
+    if(atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 63 && timeCheck == 0){
+      Controller1.Screen.clearLine();
+      Controller1.rumble(".");
+      Controller1.Screen.print("1 Minute Remaining");
+      timeCheck++;
+    }
+    else if(atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 93 && timeCheck == 1){
+      Controller1.Screen.clearLine();
+      Controller1.rumble(". .");
+      Controller1.Screen.print("30 Seconds Remaining");
+      timeCheck++;
+    }
+    else if(atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 113 && timeCheck == 2){
+      Controller1.Screen.clearLine();
+      Controller1.rumble(". . .");
+      Controller1.Screen.print("10 Seconds Remaining");
+      timeCheck++;
+    }
+
+
 
     //Intake Controls
     if(Controller1.ButtonL1.pressing()){
