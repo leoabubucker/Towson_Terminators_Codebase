@@ -45,13 +45,13 @@ motor_group driveMotors = motor_group(leftBack, leftFront, rightBack, rightFront
 motor_group leftDriveMotors = motor_group(leftFront, leftBack);
 motor_group rightDriveMotors = motor_group(rightFront, rightBack);
 motor_group nonDriveMotors = motor_group(chainIntake, leftArm, rightArm);
-
-// motor_group intakeMotors = motor_group(flexwheelIntake, chainIntake);
 motor_group armMotors = motor_group(leftArm, rightArm);
 drivetrain robotDrive = drivetrain(leftDriveMotors, rightDriveMotors, 220, 317.5, 317.5, vex::distanceUnits::mm, 0.75); //vex::drivetrain::drivetrain	(	motor_group leftMotors, motor_group rightMotors, double	wheelTravel = wheel circumference, double trackWidth = middle of left wheel to middle of right wheel, double 	wheelBase = middle of front wheel to middle of back wheel, distanceUnits unit = distanceUnits::mm, double	externalGearRatio = 36:48 (driven gear:driver gear))		
 triport myTriport = triport(Brain.ThreeWirePort);
-bumper autonSelectionBumper = bumper(myTriport.A);
-bumper autonConfirmationBumper = bumper(myTriport.B);
+pneumatics frontClamp = pneumatics(myTriport.A);
+pneumatics backClamp = pneumatics(myTriport.C);
+bumper autonSelectionBumper = bumper(myTriport.E);
+bumper autonConfirmationBumper = bumper(myTriport.G);
 
 int autonSelector;
 std::map<std::string, int> autonSelectorFrame;
@@ -98,7 +98,7 @@ void turn(int degrees, std::string direction, int velocity){
 
 void drive(int inches, std::string direction, int velocity){
     //Constants determined through testing
-    const int motorDegreesFor24Inches = 951;
+    const int motorDegreesFor24Inches = 670;
     const int motorDegreesPerInch = motorDegreesFor24Inches/24;
 
     //Calculate the degrees the motors have to turn to drive the robot inches Inches
@@ -126,12 +126,12 @@ double kP = 1.0;
 double kI = 0.0;
 double kD = 0.0;
 
-double turnkP = 1.0;
+double turnkP = 0.0;
 double turnkI = 0.0;
 double turnkD = 0.0;
 
 //Dynamic Settings
-int desiredValue = 600;
+int desiredValue = 0;
 int desiredTurnValue = 0;
 
 int error; //Sensor Value - Desired Value : Position
@@ -210,6 +210,62 @@ int drivePID(){
   }
   return 1;
 }
+
+// /*------------------------------------------------------------------------------------*/
+// /*                                                                                    */
+// /*                              Turn Function                                         */
+// /*                                                                                    */
+// /*  Turns degrees Degrees in direction Direction at velocity Velocity based on a      */
+// /*  hard-coded const of how many degrees a motor has to turn to turn the robot 90     */
+// /*  degrees. Hard-coded const found through testing. Returns void.                    */
+// /*                                                                                    */
+// /*------------------------------------------------------------------------------------*/
+
+// void turn(int degrees, std::string direction, int velocity){
+//     //Constants determined through testing
+//     const int motorDegreesFor90DegreeTurn = 362;
+//     const int motorDegreesPerDegreeTurn = motorDegreesFor90DegreeTurn/90;
+
+//     //Calculates the degrees the motors have to turn to turn the robot degrees Degrees
+//     int motorDegrees = motorDegreesPerDegreeTurn * degrees;
+
+//     //Inverts spin direction to turn left
+//     if(direction == "left"){
+//         motorDegrees *= -1;
+//     }
+//     leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+//     leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+//     rightFront.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+//     rightBack.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
+// }
+
+// /*------------------------------------------------------------------------------------*/
+// /*                                                                                    */
+// /*                              Drive Function                                        */
+// /*                                                                                    */
+// /*  Drives inches Inches in direction Direction at velocity Velocity based on a       */
+// /*  hard-coded const of how many degrees a motor has to turn to drive the robot 24in  */
+// /*  (the length/width of one square tile). Hard-coded const found through testing.    */
+// /*                                                                                    */
+// /*------------------------------------------------------------------------------------*/
+
+// void drive(int inches, std::string direction, int velocity){
+//     //Constants determined through testing
+//     const int motorDegreesFor24Inches = 670;
+//     const int motorDegreesPerInch = motorDegreesFor24Inches/24;
+
+//     //Calculate the degrees the motors have to turn to drive the robot inches Inches
+//     int motorDegrees = motorDegreesPerInch * inches;
+
+//     //Inverts spin direction to move backwards
+//     if(direction == "rev"){
+//         motorDegrees *= -1;
+//     }
+//     leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+//     leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+//     rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+//     rightBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
+// }
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
@@ -615,13 +671,14 @@ void autonomous(void) {
   // turn(45, "right", 50);
   
   if(autonSelector == 0){
-    vex::task PIDTask(drivePID);
-    resetDriveSensors = true;
-    desiredValue = 600;
-    vex::task::sleep(100);
+    drive(48, "fwd", 50);
+    // vex::task PIDTask(drivePID);
+    // resetDriveSensors = true;
+    // desiredValue = 600;
+    // vex::task::sleep(100);
 
-    resetDriveSensors = true;
-    desiredTurnValue = 300;
+    // resetDriveSensors = true;
+    // desiredTurnValue = 300;
   }
   else if(autonSelector == 1){
     //Alternative Auton
@@ -641,6 +698,10 @@ void autonomous(void) {
 
 void usercontrol(void) {
   drawGUI();
+  bool frontClampState = false;
+  bool frontClampLastState = false;
+  bool backClampState = false;
+  bool backClampLastState = false;
   enableDrivePID = false;
   int timeCheck = 0;
   std::string driveConfig = myMotorCollection.checkMotors(); //Checks motor statuses and switches drive mode (4-wheel, front-wheel, rear-wheel, LFRB, RFLB)
@@ -680,7 +741,7 @@ void usercontrol(void) {
       Brain.Screen.clearScreen();
     }
 
-    if(Controller1.ButtonX.pressing()){
+    if(Controller1.ButtonY.pressing()){
       driveConfig = myMotorCollection.checkMotors();
       drawGUI();
     }
@@ -703,7 +764,37 @@ void usercontrol(void) {
       timeCheck++;
     }
 
+    //Front Clamp Controls
+    if(Controller1.ButtonX.pressing() && !frontClampLastState) {
+      frontClampState = !frontClampState;
+      frontClampLastState = true;
+    } 
+   else if(!Controller1.ButtonX.pressing()) {
+      frontClampLastState = false;
+    }
 
+    if(frontClampState) {
+      frontClamp.set(true);
+    } 
+    else {
+      frontClamp.set(false);
+    }
+
+    //Back Clamp Controls
+    if(Controller1.ButtonB.pressing() && !backClampLastState) {
+      backClampState = !backClampState;
+      backClampLastState = true;
+    } 
+   else if(!Controller1.ButtonB.pressing()) {
+      backClampLastState = false;
+    }
+
+    if(backClampState) {
+      backClamp.set(true);
+    } 
+    else {
+      backClamp.set(false);
+    }
 
     //Intake Controls
     if(Controller1.ButtonL1.pressing()){
@@ -719,10 +810,32 @@ void usercontrol(void) {
     //Arm Controls
     if(Controller1.ButtonUp.pressing()){
       if(Controller1.ButtonR1.pressing()){
-        armMotors.spin(vex::directionType::fwd);
-      }
+        if(armMotors.position(vex::rotationUnits::deg) < 520){
+          armMotors.spinToPosition(520, vex::rotationUnits::deg);
+        }
+        else if(armMotors.position(vex::rotationUnits::deg) < 600){
+          armMotors.spinToPosition(600, vex::rotationUnits::deg);
+        }
+        else if(armMotors.position(vex::rotationUnits::deg) < 711){
+          armMotors.spinToPosition(711, vex::rotationUnits::deg);
+        }
+        else if(armMotors.position(vex::rotationUnits::deg) < 922){
+          armMotors.spinToPosition(922, vex::rotationUnits::deg);
+        }
+      } 
       else if(Controller1.ButtonR2.pressing()){
-        armMotors.spin(vex::directionType::rev);
+        if(armMotors.position(vex::rotationUnits::deg) >= 922){
+          armMotors.spinToPosition(711, vex::rotationUnits::deg);
+        }
+        else if(armMotors.position(vex::rotationUnits::deg) >= 711){
+          armMotors.spinToPosition(600, vex::rotationUnits::deg);
+        }
+        else if(armMotors.position(vex::rotationUnits::deg) >= 600){
+          armMotors.spinToPosition(520, vex::rotationUnits::deg);
+        }
+        else if(armMotors.position(vex::rotationUnits::deg) >= 520){
+          armMotors.spinToPosition(0, vex::rotationUnits::deg);
+        }
       }
       else{
         armMotors.stop();
@@ -730,32 +843,10 @@ void usercontrol(void) {
     }
     else{
       if(Controller1.ButtonR1.pressing()){
-        if(armMotors.position(vex::rotationUnits::deg) < 200){
-          armMotors.spinToPosition(200, vex::rotationUnits::deg);
-        }
-        else if(armMotors.position(vex::rotationUnits::deg) < 400){
-          armMotors.spinToPosition(400, vex::rotationUnits::deg);
-        }
-        else if(armMotors.position(vex::rotationUnits::deg) < 600){
-          armMotors.spinToPosition(600, vex::rotationUnits::deg);
-        }
-        else if(armMotors.position(vex::rotationUnits::deg) < 800){
-          armMotors.spinToPosition(800, vex::rotationUnits::deg);
-        }
-      } 
+        armMotors.spin(vex::directionType::fwd);
+      }
       else if(Controller1.ButtonR2.pressing()){
-        if(armMotors.position(vex::rotationUnits::deg) >=800){
-          armMotors.spinToPosition(600, vex::rotationUnits::deg);
-        }
-        else if(armMotors.position(vex::rotationUnits::deg) >= 600){
-          armMotors.spinToPosition(400, vex::rotationUnits::deg);
-        }
-        else if(armMotors.position(vex::rotationUnits::deg) >= 400){
-          armMotors.spinToPosition(200, vex::rotationUnits::deg);
-        }
-        else if(armMotors.position(vex::rotationUnits::deg) >= 200){
-          armMotors.spinToPosition(0, vex::rotationUnits::deg);
-        }
+        armMotors.spin(vex::directionType::rev);
       }
       else{
         armMotors.stop();
