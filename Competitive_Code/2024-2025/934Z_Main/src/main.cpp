@@ -1,9 +1,9 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /*    Module:       main.cpp                                                  */
-/*    Author:       leoku                                                     */
-/*    Created:      5/5/2024, 9:29:54 PM                                      */
-/*    Description:  V5 project                                                */
+/*    Author:       Leo Abubucker                                             */
+/*    Created:      05/05/2024                                                */
+/*    Description:  The main code for VEX VRC Team 934Z's 2024-2025 Season    */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
@@ -17,22 +17,45 @@
 #include <sstream>
 using namespace vex;
 
+/*------------------------------------------------------------------------------------*/
+/*                                                                                    */
+/*                      GLOBAL DECLARATIONS AND INITIALIZATIONS                       */
+/*  Declarations and initializations of VEX and non-VEX global variables              */
+/*  VEX Declarations:                                                                 */
+/*  - competition Competition - manages connection between the robot to the VEX       */
+/*      competition manager                                                           */
+/*  - brain Brain - represents the VEX V5 Brain                                       */
+/*  VEX Initializations:                                                              */
+/*  - controller Controller1 - represents the VEX v5 Controller constructed as the    */
+/*      "primary" or the "partner" controller                                         */
+/*  - motor motorName - represents a VEX V5 Motor constructed with a PORT from        */
+/*      "PORT1" to "PORT21", a gear ratio (Green = "ratio18_1", Red = "ratio36_1"),   */
+/*      and a boolean representing whether the motor should spin in reverse or not.   */
+/*  - motor_group motorGroupName - represents a group of motors constructed with the  */
+/*      motors in the group. primarily used for mass initializations of motor         */
+/*      attributes.                                                                   */
+/*  - triport myTriport - represents the 3-wire ports on the VEX V5 Brain             */
+/*  - pneumatics pneumaticSolenoidName - represents a pneumatic solenoid constructed  */
+/*      with a specified triport port. Solenoids are double-acting unless otherwise   */
+/*      specified.                                                                    */
+/*  - bumper bumperName - represents a VEX bumper constructed with a specified        */
+/*      triport port.                                                                 */
+/*  Non-VEX Declarations:                                                             */
+/*  - int autonSelector - integer representing the autonomous program that the user   */
+/*      selects to run.                                                               */
+/*  - std::map<std::string, int> autonSelectorFrame - map representing the            */
+/*      coordinates of the autonomous selector GUI button on the brain.               */
+/*  Non-VEX Initializations:                                                          */
+/*  - bool waitingForUserInput = true - boolean representing whether the user has     */
+/*      provided input confirming the autonomous program to be run.                   */
+/*------------------------------------------------------------------------------------*/
 
-template <typename T>
-std::string to_string(T value)
-{
-    std::ostringstream os ;
-    os << value ;
-    return os.str() ;
-}
-
-// A global instance of competition
+// VEX Declarations
 competition Competition;
-
-// define your global instances of motors and other devices here
 brain Brain;
+
+// VEX Initializations
 controller Controller1 = controller(primary);
-// motor flexwheelIntake = motor(PORT12, ratio18_1, false);
 motor chainIntake = motor(PORT17, ratio18_1, false);
 motor leftArm = motor(PORT13, ratio36_1, false);
 motor rightArm = motor(PORT18, ratio36_1, true);
@@ -46,80 +69,141 @@ motor_group leftDriveMotors = motor_group(leftFront, leftBack);
 motor_group rightDriveMotors = motor_group(rightFront, rightBack);
 motor_group nonDriveMotors = motor_group(chainIntake, leftArm, rightArm);
 motor_group armMotors = motor_group(leftArm, rightArm);
-drivetrain robotDrive = drivetrain(leftDriveMotors, rightDriveMotors, 220, 317.5, 317.5, vex::distanceUnits::mm, 0.75); //vex::drivetrain::drivetrain	(	motor_group leftMotors, motor_group rightMotors, double	wheelTravel = wheel circumference, double trackWidth = middle of left wheel to middle of right wheel, double 	wheelBase = middle of front wheel to middle of back wheel, distanceUnits unit = distanceUnits::mm, double	externalGearRatio = 36:48 (driven gear:driver gear))		
 triport myTriport = triport(Brain.ThreeWirePort);
 pneumatics frontClamp = pneumatics(myTriport.A);
 pneumatics backClamp = pneumatics(myTriport.C);
 bumper autonSelectionBumper = bumper(myTriport.E);
 bumper autonConfirmationBumper = bumper(myTriport.G);
 
+// Non-VEX Declarations
 int autonSelector;
 std::map<std::string, int> autonSelectorFrame;
+
+// Non-VEX Intializations
 bool waitingForUserInput = true;
+
 /*------------------------------------------------------------------------------------*/
 /*                                                                                    */
-/*                              CUSTOM CODE                                           */
+/*                       HELPER FUNCTIONS AND CLASSES                                 */
 /*                                                                                    */
-/*  Code that is not the acutal functions that are run by VEX competition control.    */
+/*  Helper functions and classes that assist VEX competition controlled functions.    */
 /*  Includes:                                                                         */
-/*  - Auton Turn function (based on hard-coded values)                                */
-/*  - Auton Drive function (based on hard-coded values)                               */
-/*  - PID Control                                                                     */
-/*  - Auton Drive function (based on hard-coded values)                               */
+/*  - std::string to_string(T value) - To string template function                    */
+/*  - void turn(int degrees, std::string direction, int velocity) - Autonomous turn   */
+/*    function                                                                        */
+/*  - void drive(int inches, std::string direction, int velocity) - Autonomous drive  */
+/*    function                                                                        */
+/*  - PID control - NOT FUNCTIONAL, LEAVE COMMENTED OUT                               */
+/*  - Motor Collection Class - Provides additional functionality for VEX V5 motors    */
+/*  - std::string getCompetitionStatus() - gets the current competition state         */
+/*  - vex::color getColorFromValue(std::string value, std::string keyword) - returns  */
+/*    a color based on the given value and keyword                                    */
+/*  - vex::color getColorFromValue(bool value, std::string keyword) - returns         */
+/*    a color based on the given value and keyword                                    */
+/*  - vex::color getColorFromValue(int value, std::string keyword) - returns          */
+/*    a color based on the given value and keyword                                    */
+/*  - void drawControlsFrame() - draws the control frame                              */
+/*  - void drawAutonSelectorFrame() - draws the autononomous selection frame          */
+/*  - void drawModeDisplayFrame() - draws the mode display frame                      */
+/*  - void drawMotorDebugFrame() - draws the motor debug frame                        */
+/*  - void drawBatteryInfoFrame() - draws the battery info frame                      */
+/*  - void drawControllerInfoFrame() - draws the control frame                        */
+/*  - void drawGUI() - calls the six draw functions above                             */
+/*  - void autonSelection() - Autonomous program selection function                   */
 /*------------------------------------------------------------------------------------*/
 
-void turn(int degrees, std::string direction, int velocity){
-    //Constants determined through testing
-    const int motorDegreesFor90DegreeTurn = 362;
-    const int motorDegreesPerDegreeTurn = motorDegreesFor90DegreeTurn/90;
-
-    //Calculates the degrees the motors have to turn to turn the robot degrees Degrees
-    int motorDegrees = motorDegreesPerDegreeTurn * degrees;
-
-    //Inverts spin direction to turn left
-    if(direction == "left"){
-        motorDegrees *= -1;
-    }
-    leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-    leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-    rightFront.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-    rightBack.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
+/**
+ * @brief Converts a value to a string in a method that allows printing to the VEX V5 Brain and/or Controller
+ * @tparam T
+ * @param value value to be converted to a std::string
+ * @returns value converted to a std::string
+ * @author James Pearman
+ * @cite https://www.vexforum.com/t/std-to-string-not-working-in-vc-and-vcs/62962/7
+ */
+template <typename T>
+std::string to_string(T value)
+{
+  std::ostringstream os;
+  os << value;
+  return os.str();
 }
 
-/*------------------------------------------------------------------------------------*/
-/*                                                                                    */
-/*                              Drive Function                                        */
-/*                                                                                    */
-/*  Drives inches Inches in direction Direction at velocity Velocity based on a       */
-/*  hard-coded const of how many degrees a motor has to turn to drive the robot 24in  */
-/*  (the length/width of one square tile). Hard-coded const found through testing.    */
-/*                                                                                    */
-/*------------------------------------------------------------------------------------*/
+/**
+ * @brief automated turn movement based on given parameters
+ * @details This function uses the benchmark of how many motor degrees it took to turn 90 degrees
+ * in order to convert the inputted degrees rotation to motor degrees. It then moves the
+ * robot's four drive motors for the calculated motor degrees, the inputted direction,
+ * at the inputted velocity percent.
+ * @relates autonomous()
+ * @param degrees integer degrees of robot movement
+ * @param direction std::string either "left" or "right" representing direction for movement
+ * @param velocity integer percent velocity for robot movement
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void turn(int degrees, std::string direction, int velocity)
+{
+  // Constant benchmarks
+  const int motorDegreesFor90DegreeTurn = 257;
+  const double motorDegreesPerDegreeTurn = motorDegreesFor90DegreeTurn / 90.0;
 
-void drive(int inches, std::string direction, int velocity){
-    //Constants determined through testing
-    const int motorDegreesFor24Inches = 670;
-    const int motorDegreesPerInch = motorDegreesFor24Inches/24;
+  // Calculates the degrees the motors have to turn to turn the robot for the inputted degrees
+  double motorDegrees = motorDegreesPerDegreeTurn * degrees;
 
-    //Calculate the degrees the motors have to turn to drive the robot inches Inches
-    int motorDegrees = motorDegreesPerInch * inches;
+  // Inverts spin direction to turn left
+  if (direction == "left")
+  {
+    motorDegrees *= -1;
+  }
 
-    //Inverts spin direction to move backwards
-    if(direction == "rev"){
-        motorDegrees *= -1;
-    }
-    leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-    leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-    rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-    rightBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
+  // Spins the robot's four drive motors based on the given and calculated parameters
+  leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  rightFront.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  rightBack.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
 }
 
+/**
+ * @brief automated linear movement based on given parameters
+ * @details This function uses the benchmark of how many motor degrees it took to drive 24 inches
+ * in order to convert the inputted inches to motor degrees. It then moves the robot's
+ * four drive motors for the calculated motor degrees, the inputted direction, at the
+ * inputted velocity percent.
+ * @relates autonomous()
+ * @param inches integer inches of robot movement
+ * @param direction std::string either "fwd" or "rev" representing direction for movement
+ * @param velocity integer percent velocity for robot movement
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void drive(int inches, std::string direction, int velocity)
+{
+  // Constant benchmarks
+  const int motorDegreesFor24Inches = 600;
+  const double motorDegreesPerInch = motorDegreesFor24Inches / 24.25;
 
+  // Calculate the degrees the motors have to turn to drive the robot inches Inches
+  double motorDegrees = motorDegreesPerInch * inches;
+
+  // Inverts spin direction to move backwards
+  if (direction == "rev")
+  {
+    motorDegrees *= -1;
+  }
+
+  // Spins the robot's four drive motors based on the given and calculated parameters
+  leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  rightBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
+}
 
 /*---------------------------------------------------------------------------*/
 /*                        PID CONTROL                                        */
-/*                                                                           */
+/*  NOT FUNCTIONAL - LEAVE COMMENTED OUT                                     */
 /*---------------------------------------------------------------------------*/
+/// @bug
+/* START BLOCK COMMENT FOR BUG
 
 // Constant Settings
 double kP = 1.0;
@@ -211,658 +295,919 @@ int drivePID(){
   return 1;
 }
 
-// /*------------------------------------------------------------------------------------*/
-// /*                                                                                    */
-// /*                              Turn Function                                         */
-// /*                                                                                    */
-// /*  Turns degrees Degrees in direction Direction at velocity Velocity based on a      */
-// /*  hard-coded const of how many degrees a motor has to turn to turn the robot 90     */
-// /*  degrees. Hard-coded const found through testing. Returns void.                    */
-// /*                                                                                    */
-// /*------------------------------------------------------------------------------------*/
+ END BLOCK COMMENT FOR BUG */
 
-// void turn(int degrees, std::string direction, int velocity){
-//     //Constants determined through testing
-//     const int motorDegreesFor90DegreeTurn = 362;
-//     const int motorDegreesPerDegreeTurn = motorDegreesFor90DegreeTurn/90;
+/**
+ * @brief MotorCollection class provides additional functionality to VEX V5 motors
+ * @details This class provides additional functionality in detecting the connection
+ * status of motors in the collection, dynamically updating the drive configuration
+ * based on the connection status of the drive motors, and returns attributes
+ * of the motors.
+ * @author Leo Abubucker
+ * @date 06/14/2024
+ */
+class MotorCollection
+{
+public:
+  // Init vector of motor objects
+  std::vector<vex::motor> motorList;
+  // Init vector of std::strings representing motor names
+  std::vector<std::string> motorNamesList;
 
-//     //Calculates the degrees the motors have to turn to turn the robot degrees Degrees
-//     int motorDegrees = motorDegreesPerDegreeTurn * degrees;
+  /**
+   * @brief adds the passed in motor object and std::string object motorName to respective lists
+   * @relates pre_auton()
+   * @param newMotor VEX V5 motor
+   * @param newMotorName std::string name of newMotor
+   * @author Leo Abubucker
+   * @date 06/14/2024
+   */
+  void addMotor(motor newMotor, std::string newMotorName)
+  {
+    motorList.push_back(newMotor);
+    motorNamesList.push_back(newMotorName);
+  }
 
-//     //Inverts spin direction to turn left
-//     if(direction == "left"){
-//         motorDegrees *= -1;
-//     }
-//     leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-//     leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-//     rightFront.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-//     rightBack.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
-// }
-
-// /*------------------------------------------------------------------------------------*/
-// /*                                                                                    */
-// /*                              Drive Function                                        */
-// /*                                                                                    */
-// /*  Drives inches Inches in direction Direction at velocity Velocity based on a       */
-// /*  hard-coded const of how many degrees a motor has to turn to drive the robot 24in  */
-// /*  (the length/width of one square tile). Hard-coded const found through testing.    */
-// /*                                                                                    */
-// /*------------------------------------------------------------------------------------*/
-
-// void drive(int inches, std::string direction, int velocity){
-//     //Constants determined through testing
-//     const int motorDegreesFor24Inches = 670;
-//     const int motorDegreesPerInch = motorDegreesFor24Inches/24;
-
-//     //Calculate the degrees the motors have to turn to drive the robot inches Inches
-//     int motorDegrees = motorDegreesPerInch * inches;
-
-//     //Inverts spin direction to move backwards
-//     if(direction == "rev"){
-//         motorDegrees *= -1;
-//     }
-//     leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-//     leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-//     rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-//     rightBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
-// }
-
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/*                           Motor Collection Class                          */
-/*                                                                           */
-/*  Implementation of MotorCollection class w/                               */
-/*  the following functions (function names abbreviated w/o parameters):     */
-/*      void MotorCollection::addMotor() - adds the passed in motor object   */
-/*          and std::string object motorName to the motorList and            */
-/*          motorNamesList respectively.                                     */
-/*      std::vector<bool> MotorCollection::isConnected() - Returns a list    */
-/*          of boolean variables representing whether the motor is           */
-/*          connected or disconnected. If motor is disconnected, prints      */
-/*          the motor name on the Controller screen and rumbles it.          */ 
-/*      std::string MotorCollection::checkDriveMotors() - Returns a          */
-/*          std::string var representing the drive configuration as          */
-/*          determined by which drive motors are connected/disconnected.     */
-/*      std::vector<std::string> MotorCollections:returnPositions(),         */
-/*      returnVelocities(), returnTorque(), returnTemperatures() -           */
-/*          Returns a list of motor pos/vel/torq/temp in the format          */
-/*          "name pos/vel/torq/temp"                                         */            
-/*                                                                           */
-/*---------------------------------------------------------------------------*/
-
-class MotorCollection{
-  public:
-    std::vector<vex::motor> motorList; //Init vector of motor objects
-    std::vector<std::string> motorNamesList; //Init vector of std::strings representing motor names
-    
-    void addMotor(motor newMotor, std::string newMotorName){
-        motorList.push_back(newMotor);
-        motorNamesList.push_back(newMotorName);
+  /**
+   * @brief returns motor connection values in a vector; prints disconnections to Controller
+   * @details creates an std::vector containing booleans representing the connection status of
+   * the motors. Prints the names of any disconnected motors to the Controller screen.
+   * @relates checkMotors()
+   * @returns std::vector containing booleans representing connections statuses of the motors
+   * @author Leo Abubucker
+   * @date 06/14/2024
+   */
+  std::vector<bool> isConnected()
+  {
+    Controller1.Screen.clearLine();
+    Controller1.Screen.setCursor(0, 0);
+    std::vector<bool> motorConnections;
+    for (int i = 0; i < motorList.size(); i++)
+    {
+      motorConnections.push_back(motorList[i].installed());
+      if (!motorList[i].installed())
+      {
+        Controller1.Screen.print(motorNamesList[i].c_str());
+        Controller1.Screen.print(" ");
+      }
     }
-    std::vector<bool> isConnected(){
-      Controller1.Screen.clearLine();
-      Controller1.Screen.setCursor(0,0);
-        std::vector<bool> motorConnections;
-        for(int i=0; i<motorList.size(); i++){
-            motorConnections.push_back(motorList[i].installed());
-            if(!motorList[i].installed()){
-                Controller1.Screen.print(motorNamesList[i].c_str());
-                Controller1.Screen.print(" ");
-            }
-        } 
-        return motorConnections;
+    return motorConnections;
+  }
+
+  /**
+   * @brief determines the optimal drive configuration based on the connection of drive motors
+   * @relates usercontrol()
+   * @returns std::string keyword representing the drive configuration
+   * @author Leo Abubucker
+   * @date 06/14/2024
+   */
+  std::string checkMotors()
+  {
+    std::vector<bool> motorConnections = isConnected();
+    std::vector<std::string> disconnectedMotorNames;
+    std::string updatedDriveConfig = "fourWheel";
+    for (int i = 0; i < motorConnections.size(); i++)
+    {
+      if (motorConnections[i] == false)
+      {
+        disconnectedMotorNames.push_back(motorNamesList[i]);
+      }
+    }
+    if (std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LF") != disconnectedMotorNames.end() || std::find(disconnectedMotorNames.begin(),
+                                                                                                                                   disconnectedMotorNames.end(), "RF") != disconnectedMotorNames.end())
+    {
+      updatedDriveConfig = "rearWheel";
     }
 
-    std::string checkMotors(){
-        std::vector<bool>motorConnections = isConnected();
-        std::vector<std::string> disconnectedMotorNames;
-        std::string updatedDriveConfig = "fourWheel";
-        for(int i=0; i<motorConnections.size(); i++){
-           if(motorConnections[i] == false){
-                disconnectedMotorNames.push_back(motorNamesList[i]);
-           }
-        }
-        if(std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LF") != disconnectedMotorNames.end() || std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "RF") != disconnectedMotorNames.end()){
-            updatedDriveConfig = "rearWheel";
-        }
-
-        if(std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LB") != disconnectedMotorNames.end() || std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "RB") != disconnectedMotorNames.end()){
-            updatedDriveConfig = "frontWheel";
-        }
-
-        if(std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LF") != disconnectedMotorNames.end() && std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "RB") != disconnectedMotorNames.end()){
-            updatedDriveConfig = "RFLB";
-        }
-        if(std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LB") != disconnectedMotorNames.end() || std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "RF") != disconnectedMotorNames.end()){
-            updatedDriveConfig = "LFRB";
-        }
-        return updatedDriveConfig;
+    if (std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LB") != disconnectedMotorNames.end() || std::find(disconnectedMotorNames.begin(),
+                                                                                                                                   disconnectedMotorNames.end(), "RB") != disconnectedMotorNames.end())
+    {
+      updatedDriveConfig = "frontWheel";
     }
-  
-  std::vector<std::vector<std::string>> returnValues(){
+
+    if (std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LF") != disconnectedMotorNames.end() && std::find(disconnectedMotorNames.begin(),
+                                                                                                                                   disconnectedMotorNames.end(), "RB") != disconnectedMotorNames.end())
+    {
+      updatedDriveConfig = "RFLB";
+    }
+    if (std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LB") != disconnectedMotorNames.end() || std::find(disconnectedMotorNames.begin(),
+                                                                                                                                   disconnectedMotorNames.end(), "RF") != disconnectedMotorNames.end())
+    {
+      updatedDriveConfig = "LFRB";
+    }
+    return updatedDriveConfig;
+  }
+
+  /**
+   * @brief retrieves motor attributes and returns them in a formatted 2D std::string
+   * @relates drawMotorDebugFrame()
+   * @returns 2D vector where each value is [name: cartridge, type, temperatureF, positiondeg]
+   * @author Leo Abubucker
+   * @date 06/14/2024
+   */
+  std::vector<std::vector<std::string>> returnValues()
+  {
     std::vector<std::vector<std::string>> returnedList;
-    std::string individualValue;
     std::string motorCartridgeType;
     std::string motorType;
 
-    for(int i = 0; i < motorList.size(); i++){
-      if(motorList[i].getMotorCartridge() == vex::gearSetting::ratio36_1){
+    for (int i = 0; i < motorList.size(); i++)
+    {
+      if (motorList[i].getMotorCartridge() == vex::gearSetting::ratio36_1)
+      {
         motorCartridgeType = "Red";
       }
-      else if(motorList[i].getMotorCartridge() == vex::gearSetting::ratio18_1){
+      else if (motorList[i].getMotorCartridge() == vex::gearSetting::ratio18_1)
+      {
         motorCartridgeType = "Green";
       }
-      else{
+      else
+      {
         motorCartridgeType = "Blue";
       }
 
-      if(motorList[i].getMotorType() == 0){
+      if (motorList[i].getMotorType() == 0)
+      {
         motorType = "11W";
       }
-      else{
+      else
+      {
         motorType = "5.5W";
       }
-
-      individualValue = motorNamesList[i] + ": " + motorCartridgeType + ", " + motorType + ", " + to_string(motorList[i].temperature(vex::temperatureUnits::fahrenheit)) + "F, " + to_string(motorList[i].position(vex::rotationUnits::deg)) + "deg";
-      returnedList.push_back({motorNamesList[i], ": ", motorCartridgeType, ", ", motorType, ", ", to_string(motorList[i].temperature(vex::temperatureUnits::fahrenheit)), "F", ", ", to_string(motorList[i].position(vex::rotationUnits::deg)), "deg" });
+      returnedList.push_back({motorNamesList[i], ": ", motorCartridgeType, ", ", motorType, ", ", to_string(motorList[i].temperature(vex::temperatureUnits::fahrenheit)), "F", ", ", to_string(motorList[i].position(vex::rotationUnits::deg)), "deg"});
     }
     return returnedList;
   }
-
 };
 
+// Initialization of MotorCollection
 MotorCollection myMotorCollection;
 
-/*---------------------------------------------------------------------------*/
-/*                        CUSTOM GUI                                         */
-/*                                                                           */
-/*---------------------------------------------------------------------------*/
-
-void drawGUI(){
-      //Coordinates of the R2B1 Auton Btn
-    std::map<std::string, int> controlsFrame = {
-        {"x-left", 0},
-        {"x-right", 182},
-        {"y-top", 0},
-        {"y-bottom", 180}
-    };
-    color maroon = color(128, 0 , 0);
-    //Creates red Btn at previously declared coords
-    Brain.Screen.drawRectangle(controlsFrame["x-left"], controlsFrame["y-top"], controlsFrame["x-right"] - controlsFrame["x-left"], controlsFrame["y-bottom"] - controlsFrame["y-top"], maroon);
-    //Prints R2B1 Auton in the middle of created btn
-    Brain.Screen.setFillColor(maroon);
-    Brain.Screen.setPenColor(color::white);
-    Brain.Screen.setCursor(1, 5);
-    Brain.Screen.print("Controls:");
-    Brain.Screen.setCursor(3, 2);
-    Brain.Screen.print("Driving - Tank");
-    Brain.Screen.setCursor(4, 2);
-    Brain.Screen.print("Intake - L1");
-    Brain.Screen.setCursor(5, 2);
-    Brain.Screen.print("Outtake - L2");
-    Brain.Screen.setCursor(6, 2);
-    Brain.Screen.print("Lift Arm - R1");
-    Brain.Screen.setCursor(7, 2);
-    Brain.Screen.print("Lower Arm - R2");
-    Brain.Screen.setCursor(8, 2);
-    Brain.Screen.print("Toggle - Up");
-    Brain.Screen.setCursor(9, 2);
-    Brain.Screen.print("Update GUIs - X");
-
-    //Auton Selector
-    autonSelectorFrame = {
-        {"x-left", 0},
-        {"x-right", 99},
-        {"y-top", 179},
-        {"y-bottom", 240}     
-    };
-    Brain.Screen.drawRectangle(autonSelectorFrame["x-left"], autonSelectorFrame["y-top"], autonSelectorFrame["x-right"] - autonSelectorFrame["x-left"], autonSelectorFrame["y-bottom"] - autonSelectorFrame["y-top"], maroon);
-
-    Brain.Screen.setCursor(10, 2);
-    Brain.Screen.print("Auton: ");
-    Brain.Screen.print(autonSelector);
-    Brain.Screen.setCursor(11, 2);
-    if(waitingForUserInput){
-      Brain.Screen.setPenColor(color::orange);
-      Brain.Screen.print("UNLOCKED");
+/**
+ * @brief gets the state of the VEX V5 Competition Control as a String
+ * @relates drawModeDisplayFrame()
+ * @returns std::string "AUTON", "DRIVER", "PRE-AUTON", or "DISABLED"
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+std::string getCompetitionStatus()
+{
+  if (Competition.isEnabled())
+  {
+    if (Competition.isAutonomous())
+    {
+      return "AUTON";
     }
-    else{
+    else if (Competition.isDriverControl())
+    {
+      return "DRIVER";
+    }
+    else
+    {
+      return "PRE-AUTON";
+    }
+  }
+  else
+  {
+    return "DISABLED";
+  }
+}
+
+/**
+ * @brief gets a vex::color based on an std::string value and std::string keyword
+ * @details This function takes an std::string keyword and std::string value and returns a vex::color based
+ * on specific condition(s) that the value meets. The conditions that are used are based on the keyword.
+ * @relates drawModeDisplayFrame(), drawMotorDebugFrame()
+ * @overload getColorFromValue(bool value, std::string keyword)
+ * @overload getColorFromVaue(int value, std::string keyword)
+ * @param value std::string value that determines color
+ * @param keyword std::string keyword that determines which conditions value is checked. Valid keywords are "gameState" or "motorCartridge"
+ * @returns vex::color determined by value. Returns color::white if no value, keyword pair matches.
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+vex::color getColorFromValue(std::string value, std::string keyword)
+{
+  if (keyword == "gameState")
+  {
+    if (value == "AUTON")
+    {
+      return color::orange;
+    }
+    else if (value == "DRIVER")
+    {
+      return color::green;
+    }
+    else if (value == "PRE-AUTON")
+    {
+      return color::yellow;
+    }
+    else
+    {
+      return color::red;
+    }
+  }
+  else if (keyword == "motorCartridge")
+  {
+    if (value == "Green")
+    {
+      return color::green;
+    }
+    else if (value == "Red")
+    {
+      return color::red;
+    }
+    else
+    {
+      return color::blue;
+    }
+  }
+  return color::white;
+}
+
+/**
+ * @brief gets a vex::color based on a bool value and std::string keyword
+ * @details This function takes a bool keyword and std::string value and returns a vex::color based
+ * on specific condition(s) that the value meets. The conditions that are used are based on the keyword.
+ * @relates drawAutonSelectorFrame(), drawMotorDebugFrame(), drawControllerInfoFrame()
+ * @overload getColorFromValue(std::string value, std::string keyword)
+ * @overload getColorFromVaue(int value, std::string keyword)
+ * @param value bool value that determines color
+ * @param keyword std::string keyword that determines which conditions value is checked. Valid keywords are "gameState" or "motorCartridge"
+ * @returns vex::color determined by value. Returns color::white if no value, keyword pair matches.
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+vex::color getColorFromValue(bool value, std::string keyword)
+{
+  if (keyword == "userInput")
+  {
+    if (value)
+    {
+      return color::orange;
+    }
+    else
+    {
+      return color::green;
+    }
+  }
+  else if (keyword == "motorConnection")
+  {
+    if (value)
+    {
       Brain.Screen.setPenColor(color::green);
-      Brain.Screen.print("LOCKED");
     }
-    Brain.Screen.setPenColor(color::white);
-
-    //Current Mode Display
-    std::map <std::string, int> modeDisplayFrame = {
-        {"x-left", 98},
-        {"x-right", 182},
-        {"y-top", 179},
-        {"y-bottom", 240}     
-    };  
-    Brain.Screen.drawRectangle(modeDisplayFrame["x-left"], modeDisplayFrame["y-top"], modeDisplayFrame["x-right"] - modeDisplayFrame["x-left"], modeDisplayFrame["y-bottom"] - modeDisplayFrame["y-top"], maroon);
-    Brain.Screen.setCursor(10, 13);
-    Brain.Screen.print("Mode: ");
-    std::string currentMode;
-    if(Competition.isEnabled()){
-      if(Competition.isAutonomous()){
-        Brain.Screen.setPenColor(color::orange);
-        currentMode = "AUTON";
-      }
-      else if(Competition.isDriverControl()){
-        Brain.Screen.setPenColor(color::green);
-        currentMode = "DRIVER";
-      }
-      else{
-        Brain.Screen.setPenColor(color::yellow);
-        currentMode = "PRE-AUTON";
-      }
-    }
-    else{
+    else
+    {
       Brain.Screen.setPenColor(color::red);
-      currentMode = "DISABLED";
     }
+  }
+  else if (keyword == "controllerConnection")
+  {
+    if (value)
+    {
+      Brain.Screen.setPenColor(color::green);
+    }
+    else
+    {
+      Brain.Screen.setPenColor(color::red);
+    }
+  }
+  return color::white;
+}
+
+/**
+ * @brief gets a vex::color based on an int value and std::string keyword
+ * @details This function takes an int keyword and std::string value and returns a vex::color based
+ * on specific condition(s) that the value meets. The conditions that are used are based on the keyword.
+ * @relates drawMotorDebugFrame(), drawBatteryInfoFrame()
+ * @overload getColorFromValue(std::string value, std::string keyword)
+ * @overload getColorFromVaue(bool value, std::string keyword)
+ * @param value int value that determines color
+ * @param keyword std::string keyword that determines which conditions value is checked. Valid keywords are "gameState" or "motorCartridge"
+ * @returns vex::color determined by value. Returns color::white if no value, keyword pair matches.
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+vex::color getColorFromValue(int value, std::string keyword)
+{
+  if (keyword == "motorTemperature")
+  {
+    if (value < 104)
+    {
+      return color::green;
+    }
+    else if (value < 122)
+    {
+      return color::orange;
+    }
+    else
+    {
+      return color::red;
+    }
+  }
+  else if (keyword == "battery")
+  {
+    if (value > 80)
+    {
+      return color::green;
+    }
+    else if (value > 50)
+    {
+      return color::orange;
+    }
+    else
+    {
+      return color::red;
+    }
+  }
+  return color::white;
+}
+
+/**
+ * @brief draws the GUI controls frame
+ * @relates drawGUI()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void drawControlsFrame()
+{
+  // Coordinates of the control frame
+  std::map<std::string, int> controlsFrame = {
+      {"x-left", 0},
+      {"x-right", 182},
+      {"y-top", 0},
+      {"y-ottom", 180}};
+
+  // Draws maroon rectangle at above coordinates
+  Brain.Screen.drawRectangle(controlsFrame["x-left"], controlsFrame["y-top"], controlsFrame["x-right"] - controlsFrame["x-left"], controlsFrame["y-bottom"] - controlsFrame["y-top"], color(128, 0, 0));
+
+  // Prints Controls in the frame
+  std::vector<std::string> controls = {"Driving - Tank", "Lift Arm - R1", "Lower Arm - R2", "Intake - L1", "Outtake - L2", "Clamp - X", "Toggle - Up", "Update GUIs - Y"};
+  Brain.Screen.setFillColor(color(128, 0, 0));
+  Brain.Screen.setPenColor(color::white);
+  Brain.Screen.setCursor(1, 5);
+  Brain.Screen.print("Controls:");
+  int row = 2;
+  for (int i = 0; i < controls.size(); i++)
+  {
+    Brain.Screen.setCursor(row, 2);
+    Brain.Screen.print(controls[i].c_str());
+    row++;
+  }
+}
+
+/**
+ * @brief draws the GUI autonomous selector frame
+ * @relates drawGUI()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void drawAutonSelectorFrame()
+{
+  // Coordinates of the autonomous selector frame
+  autonSelectorFrame = {
+      {"x-left", 0},
+      {"x-right", 99},
+      {"y-top", 179},
+      {"y-bottom", 240}};
+
+  // Draws maroon rectangle at above coordinates
+  Brain.Screen.drawRectangle(autonSelectorFrame["x-left"], autonSelectorFrame["y-top"], autonSelectorFrame["x-right"] - autonSelectorFrame["x-left"], autonSelectorFrame["y-bottom"] - autonSelectorFrame["y-top"], color(128, 0, 0));
+
+  // Gets and prints the color-coordinated current autonomous selection and whether the selection is locked or not in the frame
+  Brain.Screen.setCursor(10, 2);
+  Brain.Screen.print("Auton: ");
+  Brain.Screen.print(autonSelector);
+  Brain.Screen.setCursor(11, 2);
+  Brain.Screen.setPenColor(getColorFromValue(waitingForUserInput, "userInput"));
+  if (waitingForUserInput)
+  {
+    Brain.Screen.print("UNLOCKED");
+  }
+  else
+  {
+    Brain.Screen.print("LOCKED");
+  }
+
+  Brain.Screen.setPenColor(color::white);
+}
+
+/**
+ * @brief draws the GUI mode display frame
+ * @relates drawGUI()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void drawModeDisplayFrame()
+{
+  // Coordinates of the mode display frame
+  std::map<std::string, int> modeDisplayFrame = {
+      {"x-left", 98},
+      {"x-right", 182},
+      {"y-top", 179},
+      {"y-bottom", 240}};
+
+  // Draws a maroon rectangle at the above coordinates
+  Brain.Screen.drawRectangle(modeDisplayFrame["x-left"], modeDisplayFrame["y-top"], modeDisplayFrame["x-right"] - modeDisplayFrame["x-left"], modeDisplayFrame["y-bottom"] - modeDisplayFrame["y-top"], color(128, 0, 0));
+
+  // Gets and prints the color-coordinated current game state in the frame
+  Brain.Screen.setCursor(10, 13);
+  Brain.Screen.print("Mode: ");
+  std::string currentMode = getCompetitionStatus();
+  Brain.Screen.setPenColor(getColorFromValue(currentMode, "mode"));
   Brain.Screen.setCursor(11, 12);
   Brain.Screen.print(currentMode.c_str());
-  Brain.Screen.setPenColor(color::white);
 
-  //Motor Debug
-  std::map <std::string, int> motorDebugFrame = {
-        {"x-left", 181},
-        {"x-right", 479},
-        {"y-top", 0},
-        {"y-bottom", 180}     
-    };  
-  Brain.Screen.drawRectangle(motorDebugFrame["x-left"], motorDebugFrame["y-top"], motorDebugFrame["x-right"] - motorDebugFrame["x-left"], motorDebugFrame["y-bottom"] - motorDebugFrame["y-top"], maroon);
-  int row = 3;
+  Brain.Screen.setPenColor(color::white);
+}
+
+/**
+ * @brief draws the GUI motor debug frame
+ * @relates drawGUI()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void drawMotorDebugFrame()
+{
+  // Coordinates of the motor debug frame
+  std::map<std::string, int> motorDebugFrame = {
+      {"x-left", 181},
+      {"x-right", 479},
+      {"y-top", 0},
+      {"y-bottom", 180}};
+
+  // Draws a maroon rectangle at the above coordinates
+  Brain.Screen.drawRectangle(motorDebugFrame["x-left"], motorDebugFrame["y-top"], motorDebugFrame["x-right"] - motorDebugFrame["x-left"], motorDebugFrame["y-bottom"] - motorDebugFrame["y-top"], color(128, 0, 0));
+
+  // Gets and prints color-coordinated debug information for all the motors in the frame
   Brain.Screen.setCursor(1, 24);
   Brain.Screen.print("Motor Information:");
   std::vector<std::vector<std::string>> motorInfo = myMotorCollection.returnValues();
   std::vector<bool> motorConnections = myMotorCollection.isConnected();
-  for(int i = 0; i < motorInfo.size(); i++){
+  int row = 2;
+  for (int i = 0; i < motorInfo.size(); i++)
+  {
     Brain.Screen.setCursor(row, 20);
-    if(motorConnections[i] == true){
-      Brain.Screen.setPenColor(color::green);
+    Brain.Screen.setPenColor(getColorFromValue(motorConnections[i], "motorConnection"));
+
+    for (int j = 0; j < motorInfo[0].size(); j++)
+    {
+      switch (j)
+      {
+      case (2):
+        Brain.Screen.setPenColor(getColorFromValue(motorInfo[i][j], "motorCartridge"));
+        break;
+
+      case (6):
+      case (7):
+        int motorTemp = atoi(motorInfo[i][j].c_str());
+        Brain.Screen.setPenColor(getColorFromValue(motorTemp, "motorTemperature"));
+        break;
+      }
+
+      Brain.Screen.print(motorInfo[i][j].c_str());
+      Brain.Screen.setPenColor(color::white);
+      row++;
     }
-    else{
-      Brain.Screen.setPenColor(color::red);
-    }
-    Brain.Screen.print(motorInfo[i][0].c_str());
-    Brain.Screen.print(motorInfo[i][1].c_str());
-    if(motorInfo[i][2] == "Green"){
-      Brain.Screen.setPenColor(color::green);
-    }
-    else{
-      Brain.Screen.setPenColor(color::red);
-    }
-    Brain.Screen.print(motorInfo[i][2].c_str());
-    Brain.Screen.setPenColor(color::white);
-    Brain.Screen.print(motorInfo[i][3].c_str());
-    Brain.Screen.print(motorInfo[i][4].c_str());
-    Brain.Screen.print(motorInfo[i][5].c_str());
-    int motorTemp = atoi(motorInfo[i][6].c_str());
-    if(motorTemp < 104){
-      Brain.Screen.setPenColor(color::green);
-    }
-    else if(motorTemp < 122){
-      Brain.Screen.setPenColor(color::orange);
-    }
-    else{
-      Brain.Screen.setPenColor(color::red);
-    }
-    Brain.Screen.print(motorInfo[i][6].c_str());
-    Brain.Screen.print(motorInfo[i][7].c_str());
-    Brain.Screen.setPenColor(color::white);
-    Brain.Screen.print(motorInfo[i][8].c_str());
-    Brain.Screen.print(motorInfo[i][9].c_str());
-    Brain.Screen.print(motorInfo[i][10].c_str());
-    row++;
   }
-  // Brain.Screen.print(Brain.);
-  // Battery and Controller Info
-  std::map <std::string, int> batteryInfoFrame = {
-        {"x-left", 181},
-        {"x-right", 276},
-        {"y-top", 179},
-        {"y-bottom", 240}     
-    };  
-  Brain.Screen.drawRectangle(batteryInfoFrame["x-left"], batteryInfoFrame["y-top"], batteryInfoFrame["x-right"] - batteryInfoFrame["x-left"], batteryInfoFrame["y-bottom"] - batteryInfoFrame["y-top"], maroon);
+}
+
+/**
+ * @brief draws the GUI battery info frame
+ * @relates drawGUI()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void drawBatteryInfoFrame()
+{
+  // Coordinates of the battery info frame
+  std::map<std::string, int> batteryInfoFrame = {
+      {"x-left", 181},
+      {"x-right", 276},
+      {"y-top", 179},
+      {"y-bottom", 240}};
+
+  // Draws a maroon rectangle at the above coordinates
+  Brain.Screen.drawRectangle(batteryInfoFrame["x-left"], batteryInfoFrame["y-top"], batteryInfoFrame["x-right"] - batteryInfoFrame["x-left"], batteryInfoFrame["y-bottom"] - batteryInfoFrame["y-top"], color(128, 0, 0));
+
+  // Gets and prints the color-coordinated battery percent in the frame
   Brain.Screen.setCursor(10, 20);
   Brain.Screen.print("Battery:");
   Brain.Screen.setCursor(11, 22);
-  // Brain.Screen.print("%.2f%%", (Brain.Battery.voltage()/Brain.Battery.capacity())*100); 
-  // Brain.Screen.print(" %.2f", Brain.Battery.capacity(pct));
-
-  if(Brain.Battery.capacity() > 80){
-    Brain.Screen.setPenColor(color::green);
-  }
-  else if(Brain.Battery.capacity() > 50){
-    Brain.Screen.setPenColor(color::orange);
-  }
-  else{
-    Brain.Screen.setPenColor(color::red);
-  }
+  Brain.Screen.setPenColor(getColorFromValue((int)Brain.Battery.capacity(), "battery"));
   Brain.Screen.print("%d%%", Brain.Battery.capacity());
+
   Brain.Screen.setPenColor(color::white);
-  // Brain.Screen.print("%");
-  std::map <std::string, int> controllerInfoFrame = {
-        {"x-left", 275},
-        {"x-right", 394},
-        {"y-top", 179},
-        {"y-bottom", 240}     
-    }; 
-  Brain.Screen.drawRectangle(controllerInfoFrame["x-left"], controllerInfoFrame["y-top"], controllerInfoFrame["x-right"] - controllerInfoFrame["x-left"], controllerInfoFrame["y-bottom"] - controllerInfoFrame["y-top"], maroon);
+}
+
+/**
+ * @brief draws the GUI controller info frame
+ * @relates drawGUI()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void drawControllerInfoFrame()
+{
+  // Coordinates of the controller info frame
+  std::map<std::string, int> controllerInfoFrame = {
+      {"x-left", 275},
+      {"x-right", 394},
+      {"y-top", 179},
+      {"y-bottom", 240}};
+
+  // Draws a maroon rectangle at the above coords
+  Brain.Screen.drawRectangle(controllerInfoFrame["x-left"], controllerInfoFrame["y-top"], controllerInfoFrame["x-right"] - controllerInfoFrame["x-left"], controllerInfoFrame["y-bottom"] - controllerInfoFrame["y-top"], color(128, 0, 0));
   Brain.Screen.setCursor(10, 29);
   Brain.Screen.print("Controller:");
   Brain.Screen.setCursor(11, 30);
-  if(Controller1.installed()){
-    Brain.Screen.setPenColor(color::green);
+
+  // Gets and prints the color-coordinated controller connection in the frame
+  Brain.Screen.setPenColor(getColorFromValue(Controller1.installed(), "controllerConnection"));
+  if (Controller1.installed())
+  {
     Brain.Screen.print("CONNECTED");
   }
-  else{
-    Brain.Screen.setPenColor(color::red);
+  else
+  {
     Brain.Screen.print("DISCONNECTED");
   }
-  Brain.Screen.setPenColor(color::white);
-    //Controller1.installed()
 
-    // Brain.Battery.capacity(vex::percentUnits::pct);
-   
+  Brain.Screen.setPenColor(color::white);
 }
 
-void autonSelection(){
-    int localLastTouchX = -1; //Init int to log the x-coordinate where the user last touched the Brain's screen
-    int localLastTouchY = -1; //Init int to log the y-coordinate where the user last touched the Brain's screen
-    waitingForUserInput = true;
-    // drawGUI();
-    while(waitingForUserInput){
-      if(Competition.isEnabled()){
-        waitingForUserInput = false;
-        break;
-      }
-      //Logs the last x and y position of the user's touch to the localLastTouchX, localLastTouchY vars respectively
-      if(Brain.Screen.pressing()){
-          localLastTouchX = Brain.Screen.xPosition();
-          localLastTouchY = Brain.Screen.yPosition();
-      
-        //Checks if the user touches the R2B1 Auton Btn
-        if(localLastTouchX >= autonSelectorFrame["x-left"] && localLastTouchX <= autonSelectorFrame["x-right"] && localLastTouchY >= autonSelectorFrame["y-top"] && localLastTouchY <= autonSelectorFrame["y-bottom"]){
-            if(autonSelector < 2){
-              autonSelector++;
-            }
-            else{
-              autonSelector = 0;
-            }
+/**
+ * @brief calls the six individual drawing functions to draw the entire GUI
+ * @relates autonSelection(), pre_auton(), autonomous(), usercontrol()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void drawGUI()
+{
+  drawControlsFrame();
+  drawAutonSelectorFrame();
+  drawModeDisplayFrame();
+  drawMotorDebugFrame();
+  drawBatteryInfoFrame();
+  drawControllerInfoFrame();
+}
 
-            wait(200, msec);
-            drawGUI();
-        }
-      }
-      if(autonSelectionBumper.pressing() == 1){
-          if(autonSelector < 2){
-            autonSelector++;
-          }
-          else{
-            autonSelector = 0;
-          }  
-          drawGUI();   
-      }
-      if(autonConfirmationBumper.pressing() == 1){
-        waitingForUserInput = false; 
-      }
-      wait(20, msec);
+/**
+ * @brief manages user input for the auton selector
+ * @relates pre_auton()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void autonSelection()
+{
+  // Init int to log the x-coordinate where the user last touched the Brain's screen
+  int localLastTouchX = -1;
+  // Init int to log the y-coordinate where the user last touched the Brain's screen
+  int localLastTouchY = -1;
+
+  waitingForUserInput = true;
+  while (waitingForUserInput)
+  {
+    if (Competition.isEnabled())
+    {
+      waitingForUserInput = false;
+      break;
     }
+    // Logs the last x and y position of the user's touch to the localLastTouchX, localLastTouchY vars respectively
+    if (Brain.Screen.pressing())
+    {
+      localLastTouchX = Brain.Screen.xPosition();
+      localLastTouchY = Brain.Screen.yPosition();
+
+      // Checks if the user touches the on-screen auton selection button
+      if (localLastTouchX >= autonSelectorFrame["x-left"] && localLastTouchX <= autonSelectorFrame["x-right"] && localLastTouchY >= autonSelectorFrame["y-top"] && localLastTouchY <= autonSelectorFrame["y-bottom"])
+      {
+        if (autonSelector < 2)
+        {
+          autonSelector++;
+        }
+        else
+        {
+          autonSelector = 0;
+        }
+
+        wait(200, msec);
+        drawGUI();
+      }
+    }
+
+    // Checks if the user presses the physical auton selection bumper
+    if (autonSelectionBumper.pressing() == 1)
+    {
+      if (autonSelector < 2)
+      {
+        autonSelector++;
+      }
+      else
+      {
+        autonSelector = 0;
+      }
+      drawGUI();
+    }
+
+    // Checks if the user presses the physical auton confirmation bumper
+    if (autonConfirmationBumper.pressing() == 1)
+    {
+      waitingForUserInput = false;
+    }
+    wait(20, msec);
+  }
+
   drawGUI();
 }
 
+/*------------------------------------------------------------------------------------*/
+/*                                                                                    */
+/*                       VEX COMPETITION CONTROLLED FUNCTIONS                         */
+/*                                                                                    */
+/*  VEX competition controlled functions are those that are automatically called by   */
+/*  VEX tournament management systems and should not be manually called except by     */
+/*  the VEX competition controlled function main().                                    */
+/*  Includes:                                                                         */
+/*  - void pre_auton() - pre-game initializations, GUI loading, auton selection       */
+/*  - void autonomous() - update GUI, check motors, 15 sec autonomous robot movement  */
+/*  - void usercontrol() - update GUI, check motors, 1m45s loop of user-controlled    */
+/*    robot movement                                                                  */
+/*  - int main() - controls all other VEX controlled functions - DO NOT EDIT          */
+/*------------------------------------------------------------------------------------*/
 
-
-/*---------------------------------------------------------------------------*/
-/*                          Pre-Autonomous Functions                         */
-/*                                                                           */
-/*  You may want to perform some actions before the competition starts.      */
-/*  Do them in the following function.  You must return from this function   */
-/*  or the autonomous and usercontrol tasks will not be started.  This       */
-/*  function is only called once after the V5 has been powered on and        */
-/*  not every time that the robot is disabled.                               */
-/*---------------------------------------------------------------------------*/
-
-void pre_auton(void) {
+/**
+ * @brief VEX Competition Controlled Function: pre-game initializations, GUI loading, auton selection prompting
+ * @relates main()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void pre_auton(void)
+{
   myMotorCollection.addMotor(leftArm, "LA");
   myMotorCollection.addMotor(rightArm, "RA");
   myMotorCollection.addMotor(leftBack, "LB");
   myMotorCollection.addMotor(leftFront, "LF");
   myMotorCollection.addMotor(rightBack, "RB");
   myMotorCollection.addMotor(rightFront, "RF");
-
+  myMotorCollection.addMotor(chainIntake, "I");
   autonSelector = 0;
   drawGUI();
   autonSelection();
   allMotors.setMaxTorque(100, vex::percentUnits::pct);
   allMotors.setVelocity(100, vex::percentUnits::pct);
-  armMotors.setVelocity(50, vex::velocityUnits::pct);
+  armMotors.setVelocity(80, vex::velocityUnits::pct);
   allMotors.setTimeout(5, vex::timeUnits::sec);
   nonDriveMotors.setStopping(vex::brakeType::hold);
-  robotDrive.setTurnVelocity(50, vex::velocityUnits::pct);
   allMotors.resetPosition();
-  // All activities that occur before the competition starts
-  // Example: clearing encoders, setting servo positions, ...
 }
 
-
-
-
-
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/*                              Autonomous Task                              */
-/*                                                                           */
-/*  This task is used to control your robot during the autonomous phase of   */
-/*  a VEX Competition.                                                       */
-/*                                                                           */
-/*  You must modify the code to add your own robot specific commands here.   */
-/*---------------------------------------------------------------------------*/
-
-void autonomous(void) {
+/**
+ * @brief VEX Competition Controlled Function: update GUI, check motors, 15 seconds of autonomous robot movement
+ * @relates main()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void autonomous(void)
+{
   drawGUI();
   myMotorCollection.isConnected();
-  // drive(24, "fwd", 100);
-  // turn(90, "left", 50);
-  // drive(12, "rev", 100);
-  // turn(45, "right", 50);
-  
-  if(autonSelector == 0){
-    drive(48, "fwd", 50);
-    // vex::task PIDTask(drivePID);
-    // resetDriveSensors = true;
-    // desiredValue = 600;
-    // vex::task::sleep(100);
 
-    // resetDriveSensors = true;
-    // desiredTurnValue = 300;
+  /// @bug
+  /* START BLOCK COMMENT FOR BUG
+
+  vex::task PIDTask(drivePID);
+  resetDriveSensors = true;
+  desiredValue = 600;
+  vex::task::sleep(100);
+  resetDriveSensors = true;
+  desiredTurnValue = 300;
+
+  END BLOCK COMMENT FOR BUG */
+
+  if (autonSelector == 0)
+  {
+    // Main Auton
   }
-  else if(autonSelector == 1){
-    //Alternative Auton
+  else if (autonSelector == 1)
+  {
+    // Alternative Auton
+  }
+  else if (autonSelector == 2)
+  {
+    // NO AUTON - LEAVE BLANK
   }
 }
 
-
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/*                              User Control Task                            */
-/*                                                                           */
-/*  This task is used to control your robot during the user control phase of */
-/*  a VEX Competition.                                                       */
-/*                                                                           */
-/*  You must modify the code to add your own robot specific commands here.   */
-/*---------------------------------------------------------------------------*/
-
-void usercontrol(void) {
+/**
+ * @brief VEX Competition Controlled Function: update GUI, check motors, 1 minute 45 second loop of user-controlled robot movement
+ * @relates main()
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+void usercontrol(void)
+{
   drawGUI();
   bool frontClampState = false;
   bool frontClampLastState = false;
   bool backClampState = false;
   bool backClampLastState = false;
-  enableDrivePID = false;
+
+  /// @bug enableDrivePID = false;
+
   int timeCheck = 0;
-  std::string driveConfig = myMotorCollection.checkMotors(); //Checks motor statuses and switches drive mode (4-wheel, front-wheel, rear-wheel, LFRB, RFLB)
+  // Checks motor statuses and switches drive mode (4-wheel, front-wheel, rear-wheel, LFRB, RFLB)
+  std::string driveConfig = myMotorCollection.checkMotors();
+
   // User control code here, inside the loop
-  while (1) {
-    //Drive Controls
-    if(driveConfig == "rearWheel"){
-      leftBack.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
-      rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct); 
-    }
-    else if(driveConfig == "frontWheel"){
-      leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
-      rightFront.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct); 
-    }
-    else if(driveConfig == "RFLB"){
-      rightFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
-      leftBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);     
-    }
-    else if(driveConfig == "LFRB"){
-      leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
-      rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);     
-    }
-    else{
-      leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
-      leftBack.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
-      rightFront.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct); 
-      rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct); 
-    }
-
-    //Testing Degree Values for Drive
-    // Brain.Screen.print(leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg) + rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg));
-   
-    // Testing Degree Values for Arm
-    // Brain.Screen.print(armMotors.position(vex::rotationUnits::deg));
-    
-    if(Controller1.ButtonB.pressing()){
-      Brain.Screen.clearScreen();
-    }
-
-    if(Controller1.ButtonY.pressing()){
+  while (1)
+  {
+    // Check Motors and Update GUI
+    if (Controller1.ButtonY.pressing())
+    {
       driveConfig = myMotorCollection.checkMotors();
       drawGUI();
     }
-    if(atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 63 && timeCheck == 0){
+
+    // Time update on controller at 1 minute, 30 seconds, and 10 seconds
+    if (atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 63 && timeCheck == 0)
+    {
       Controller1.Screen.clearLine();
       Controller1.rumble(".");
       Controller1.Screen.print("1 Minute Remaining");
       timeCheck++;
     }
-    else if(atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 93 && timeCheck == 1){
+    else if (atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 93 && timeCheck == 1)
+    {
       Controller1.Screen.clearLine();
       Controller1.rumble(". .");
       Controller1.Screen.print("30 Seconds Remaining");
       timeCheck++;
     }
-    else if(atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 113 && timeCheck == 2){
+    else if (atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 113 && timeCheck == 2)
+    {
       Controller1.Screen.clearLine();
       Controller1.rumble(". . .");
       Controller1.Screen.print("10 Seconds Remaining");
       timeCheck++;
     }
 
-    //Front Clamp Controls
-    if(Controller1.ButtonX.pressing() && !frontClampLastState) {
-      frontClampState = !frontClampState;
-      frontClampLastState = true;
-    } 
-   else if(!Controller1.ButtonX.pressing()) {
-      frontClampLastState = false;
+    // Drive Controls
+    if (driveConfig == "rearWheel")
+    {
+      leftBack.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
+      rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
+    }
+    else if (driveConfig == "frontWheel")
+    {
+      leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
+      rightFront.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
+    }
+    else if (driveConfig == "RFLB")
+    {
+      rightFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
+      leftBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
+    }
+    else if (driveConfig == "LFRB")
+    {
+      leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
+      rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
+    }
+    else
+    {
+      leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
+      leftBack.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
+      rightFront.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
+      rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
     }
 
-    if(frontClampState) {
+    // Front Clamp Controls
+    if (Controller1.ButtonX.pressing() && !frontClampLastState)
+    {
+      frontClampState = !frontClampState;
+      frontClampLastState = true;
+    }
+    else if (!Controller1.ButtonX.pressing())
+    {
+      frontClampLastState = false;
+    }
+    if (frontClampState)
+    {
       frontClamp.set(true);
-    } 
-    else {
+    }
+    else
+    {
       frontClamp.set(false);
     }
 
-    //Back Clamp Controls
-    if(Controller1.ButtonB.pressing() && !backClampLastState) {
+    // Back Clamp Controls
+    if (Controller1.ButtonB.pressing() && !backClampLastState)
+    {
       backClampState = !backClampState;
       backClampLastState = true;
-    } 
-   else if(!Controller1.ButtonB.pressing()) {
+    }
+    else if (!Controller1.ButtonB.pressing())
+    {
       backClampLastState = false;
     }
 
-    if(backClampState) {
+    if (backClampState)
+    {
       backClamp.set(true);
-    } 
-    else {
+    }
+    else
+    {
       backClamp.set(false);
     }
 
-    //Intake Controls
-    if(Controller1.ButtonL1.pressing()){
+    // Intake Controls
+    if (Controller1.ButtonL1.pressing())
+    {
       chainIntake.spin(vex::directionType::fwd);
     }
-    else if(Controller1.ButtonL2.pressing()){
+    else if (Controller1.ButtonL2.pressing())
+    {
       chainIntake.spin(vex::directionType::rev);
     }
-    else{
+    else
+    {
       chainIntake.stop();
     }
 
-    //Arm Controls
-    if(Controller1.ButtonUp.pressing()){
-      if(Controller1.ButtonR1.pressing()){
-        if(armMotors.position(vex::rotationUnits::deg) < 520){
+    // Arm Controls
+    if (Controller1.ButtonUp.pressing())
+    {
+      if (Controller1.ButtonR1.pressing())
+      {
+        if (armMotors.position(vex::rotationUnits::deg) < 520)
+        {
           armMotors.spinToPosition(520, vex::rotationUnits::deg);
         }
-        else if(armMotors.position(vex::rotationUnits::deg) < 600){
+        else if (armMotors.position(vex::rotationUnits::deg) < 600)
+        {
           armMotors.spinToPosition(600, vex::rotationUnits::deg);
         }
-        else if(armMotors.position(vex::rotationUnits::deg) < 711){
+        else if (armMotors.position(vex::rotationUnits::deg) < 711)
+        {
           armMotors.spinToPosition(711, vex::rotationUnits::deg);
         }
-        else if(armMotors.position(vex::rotationUnits::deg) < 922){
+        else if (armMotors.position(vex::rotationUnits::deg) < 922)
+        {
           armMotors.spinToPosition(922, vex::rotationUnits::deg);
         }
-      } 
-      else if(Controller1.ButtonR2.pressing()){
-        if(armMotors.position(vex::rotationUnits::deg) >= 922){
+      }
+      else if (Controller1.ButtonR2.pressing())
+      {
+        if (armMotors.position(vex::rotationUnits::deg) >= 922)
+        {
           armMotors.spinToPosition(711, vex::rotationUnits::deg);
         }
-        else if(armMotors.position(vex::rotationUnits::deg) >= 711){
+        else if (armMotors.position(vex::rotationUnits::deg) >= 711)
+        {
           armMotors.spinToPosition(600, vex::rotationUnits::deg);
         }
-        else if(armMotors.position(vex::rotationUnits::deg) >= 600){
+        else if (armMotors.position(vex::rotationUnits::deg) >= 600)
+        {
           armMotors.spinToPosition(520, vex::rotationUnits::deg);
         }
-        else if(armMotors.position(vex::rotationUnits::deg) >= 520){
+        else if (armMotors.position(vex::rotationUnits::deg) >= 520)
+        {
           armMotors.spinToPosition(0, vex::rotationUnits::deg);
         }
       }
-      else{
+      else
+      {
         armMotors.stop();
       }
     }
-    else{
-      if(Controller1.ButtonR1.pressing()){
+    else
+    {
+      if (Controller1.ButtonR1.pressing())
+      {
         armMotors.spin(vex::directionType::fwd);
       }
-      else if(Controller1.ButtonR2.pressing()){
+      else if (Controller1.ButtonR2.pressing())
+      {
         armMotors.spin(vex::directionType::rev);
       }
-      else{
+      else
+      {
         armMotors.stop();
       }
     }
-    
-    
-    wait(20, msec); // Sleep the task for a short amount of time to
-                    // prevent wasted resources.
+
+    // Sleep the task for a short amount of time to prevent wasted resources - DO NOT REMOVE
+    wait(20, msec);
   }
 }
 
-//
-// Main will set up the competition functions and callbacks.
-//
-int main() {
+/**
+ * @brief VEX Competition Controlled Function: controls all other VEX controlled functions - DO NOT EDIT
+ * @author VEX
+ * @date 05/05/2024
+ */
+int main()
+{
   // Set up callbacks for autonomous and driver control periods.
   Competition.autonomous(autonomous);
   Competition.drivercontrol(usercontrol);
@@ -871,7 +1216,8 @@ int main() {
   pre_auton();
 
   // Prevent main from exiting with an infinite loop.
-  while (true) {
+  while (true)
+  {
     wait(100, msec);
   }
 }
