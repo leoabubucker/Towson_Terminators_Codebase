@@ -62,7 +62,7 @@ motor rightArm = motor(PORT18, ratio36_1, true);
 motor leftBack = motor(PORT5, ratio18_1, true);
 motor leftFront = motor(PORT11, ratio18_1, true);
 motor rightBack = motor(PORT10, ratio18_1, false);
-motor rightFront = motor(PORT20, ratio18_1, false);
+motor rightFront = motor(PORT19, ratio18_1, false);
 motor_group allMotors = motor_group(chainIntake, leftArm, rightArm, leftBack, leftFront, rightBack, rightFront);
 motor_group driveMotors = motor_group(leftBack, leftFront, rightBack, rightFront);
 motor_group leftDriveMotors = motor_group(leftFront, leftBack);
@@ -141,7 +141,7 @@ std::string to_string(T value)
  * @author Leo Abubucker
  * @date 07/21/2024
  */
-void turn(int degrees, std::string direction, int velocity)
+void turn(double degrees, std::string direction, int velocity)
 {
   // Constant benchmarks
   const int motorDegreesFor90DegreeTurn = 257;
@@ -176,7 +176,7 @@ void turn(int degrees, std::string direction, int velocity)
  * @author Leo Abubucker
  * @date 07/21/2024
  */
-void drive(int inches, std::string direction, int velocity)
+void drive(double inches, std::string direction, int velocity)
 {
   // Constant benchmarks
   const int motorDegreesFor24Inches = 600;
@@ -988,6 +988,23 @@ void autonomous(void)
   if (autonSelector == 0)
   {
     // Main Auton
+    drive(15.50, "fwd", 25);
+    armMotors.spinToPosition(490, vex::rotationUnits::deg, true);
+    drive(5, "fwd", 25);
+    chainIntake.spinToPosition(-250, vex::rotationUnits::deg, true);
+    armMotors.spinToPosition(327, vex::rotationUnits::deg, true);
+    chainIntake.spinToPosition(-600, vex::rotationUnits::deg, true);
+    drive(7, "rev", 25);
+    armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
+    drive(6, "rev", 50);
+    turn(140, "right", 50);
+    drive(9.25, "fwd", 50);
+    armMotors.spinToPosition(235, vex::rotationUnits::deg, true);
+    drive(4, "fwd", 50);
+    chainIntake.spinToPosition(0,vex::rotationUnits::deg, true);
+    drive(12.5, "rev", 50);
+    armMotors.spinToPosition(0,vex::rotationUnits::deg, true);
+    turn(134, "left", 50);
   }
   else if (autonSelector == 1)
   {
