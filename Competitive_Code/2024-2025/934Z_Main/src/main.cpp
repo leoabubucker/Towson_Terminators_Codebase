@@ -46,7 +46,7 @@ using namespace vex;
 /*  - std::map<std::string, int> autonSelectorFrame - map representing the            */
 /*      coordinates of the autonomous selector GUI button on the brain.               */
 /*  Non-VEX Initializations:                                                          */
-/*  - bool waitingForUserInput = true - boolean representing whether the user has     */
+/*  - bool waitingForUserInput = false - boolean representing whether the user has    */
 /*      provided input confirming the autonomous program to be run.                   */
 /*------------------------------------------------------------------------------------*/
 
@@ -80,7 +80,7 @@ int autonSelector;
 std::map<std::string, int> autonSelectorFrame;
 
 // Non-VEX Intializations
-bool waitingForUserInput = true;
+bool waitingForUserInput = false;
 
 /*------------------------------------------------------------------------------------*/
 /*                                                                                    */
@@ -138,8 +138,8 @@ std::string to_string(T value)
  * @param degrees integer degrees of robot movement
  * @param direction std::string either "left" or "right" representing direction for movement
  * @param velocity integer percent velocity for robot movement
- * @author Leo Abubucker
- * @date 07/21/2024
+ * @authors Leo Abubucker, Jack Deise
+ * @date 07/28/2024
  */
 void turn(double degrees, std::string direction, int velocity)
 {
@@ -157,10 +157,10 @@ void turn(double degrees, std::string direction, int velocity)
   }
 
   // Spins the robot's four drive motors based on the given and calculated parameters
-  leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
   leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-  rightFront.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
   rightBack.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
+  leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  rightFront.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
 }
 
 /**
@@ -173,8 +173,8 @@ void turn(double degrees, std::string direction, int velocity)
  * @param inches integer inches of robot movement
  * @param direction std::string either "fwd" or "rev" representing direction for movement
  * @param velocity integer percent velocity for robot movement
- * @author Leo Abubucker
- * @date 07/21/2024
+ * @author Leo Abubucker, Jack Deise
+ * @date 07/28/2024
  */
 void drive(double inches, std::string direction, int velocity)
 {
@@ -192,10 +192,10 @@ void drive(double inches, std::string direction, int velocity)
   }
 
   // Spins the robot's four drive motors based on the given and calculated parameters
-  leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
   leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-  rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
   rightBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
+  leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -536,7 +536,7 @@ vex::color getColorFromValue(std::string value, std::string keyword)
  * @param keyword std::string keyword that determines which conditions value is checked. Valid keywords are "gameState" or "motorCartridge"
  * @returns vex::color determined by value. Returns color::white if no value, keyword pair matches.
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 07/28/2024
  */
 vex::color getColorFromValue(bool value, std::string keyword)
 {
@@ -555,22 +555,22 @@ vex::color getColorFromValue(bool value, std::string keyword)
   {
     if (value)
     {
-      Brain.Screen.setPenColor(color::green);
+      return color::green;
     }
     else
     {
-      Brain.Screen.setPenColor(color::red);
+      return color::red;
     }
   }
   else if (keyword == "controllerConnection")
   {
     if (value)
     {
-      Brain.Screen.setPenColor(color::green);
+      return color::green;
     }
     else
     {
-      Brain.Screen.setPenColor(color::red);
+      return color::red;
     }
   }
   return color::white;
@@ -628,7 +628,7 @@ vex::color getColorFromValue(int value, std::string keyword)
  * @brief draws the GUI controls frame
  * @relates drawGUI()
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 07/28/2024
  */
 void drawControlsFrame()
 {
@@ -637,7 +637,7 @@ void drawControlsFrame()
       {"x-left", 0},
       {"x-right", 182},
       {"y-top", 0},
-      {"y-ottom", 180}};
+      {"y-bottom", 180}};
 
   // Draws maroon rectangle at above coordinates
   Brain.Screen.drawRectangle(controlsFrame["x-left"], controlsFrame["y-top"], controlsFrame["x-right"] - controlsFrame["x-left"], controlsFrame["y-bottom"] - controlsFrame["y-top"], color(128, 0, 0));
@@ -697,7 +697,7 @@ void drawAutonSelectorFrame()
  * @brief draws the GUI mode display frame
  * @relates drawGUI()
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 07/28/2024
  */
 void drawModeDisplayFrame()
 {
@@ -715,10 +715,16 @@ void drawModeDisplayFrame()
   Brain.Screen.setCursor(10, 13);
   Brain.Screen.print("Mode: ");
   std::string currentMode = getCompetitionStatus();
-  Brain.Screen.setPenColor(getColorFromValue(currentMode, "mode"));
-  Brain.Screen.setCursor(11, 12);
+  Brain.Screen.setPenColor(getColorFromValue(currentMode, "gameState"));
+  if (currentMode == "DISABLED")
+  {
+    Brain.Screen.setCursor(11, 11);
+  }
+  else
+  {
+    Brain.Screen.setCursor(11, 12);
+  }
   Brain.Screen.print(currentMode.c_str());
-
   Brain.Screen.setPenColor(color::white);
 }
 
@@ -726,7 +732,7 @@ void drawModeDisplayFrame()
  * @brief draws the GUI motor debug frame
  * @relates drawGUI()
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 07/28/2024
  */
 void drawMotorDebugFrame()
 {
@@ -765,11 +771,10 @@ void drawMotorDebugFrame()
         Brain.Screen.setPenColor(getColorFromValue(motorTemp, "motorTemperature"));
         break;
       }
-
       Brain.Screen.print(motorInfo[i][j].c_str());
       Brain.Screen.setPenColor(color::white);
-      row++;
     }
+    row++;
   }
 }
 
@@ -777,7 +782,7 @@ void drawMotorDebugFrame()
  * @brief draws the GUI battery info frame
  * @relates drawGUI()
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 07/28/2024
  */
 void drawBatteryInfoFrame()
 {
@@ -797,7 +802,6 @@ void drawBatteryInfoFrame()
   Brain.Screen.setCursor(11, 22);
   Brain.Screen.setPenColor(getColorFromValue((int)Brain.Battery.capacity(), "battery"));
   Brain.Screen.print("%d%%", Brain.Battery.capacity());
-
   Brain.Screen.setPenColor(color::white);
 }
 
@@ -805,14 +809,14 @@ void drawBatteryInfoFrame()
  * @brief draws the GUI controller info frame
  * @relates drawGUI()
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 07/28/2024
  */
 void drawControllerInfoFrame()
 {
   // Coordinates of the controller info frame
   std::map<std::string, int> controllerInfoFrame = {
       {"x-left", 275},
-      {"x-right", 394},
+      {"x-right", 405},
       {"y-top", 179},
       {"y-bottom", 240}};
 
@@ -820,7 +824,7 @@ void drawControllerInfoFrame()
   Brain.Screen.drawRectangle(controllerInfoFrame["x-left"], controllerInfoFrame["y-top"], controllerInfoFrame["x-right"] - controllerInfoFrame["x-left"], controllerInfoFrame["y-bottom"] - controllerInfoFrame["y-top"], color(128, 0, 0));
   Brain.Screen.setCursor(10, 29);
   Brain.Screen.print("Controller:");
-  Brain.Screen.setCursor(11, 30);
+  Brain.Screen.setCursor(11, 29);
 
   // Gets and prints the color-coordinated controller connection in the frame
   Brain.Screen.setPenColor(getColorFromValue(Controller1.installed(), "controllerConnection"));
@@ -965,8 +969,8 @@ void pre_auton(void)
 /**
  * @brief VEX Competition Controlled Function: update GUI, check motors, 15 seconds of autonomous robot movement
  * @relates main()
- * @author Leo Abubucker
- * @date 07/21/2024
+ * @authors Leo Abubucker, Jack Deise
+ * @date 07/28/2024
  */
 void autonomous(void)
 {
@@ -1001,9 +1005,9 @@ void autonomous(void)
     drive(9.25, "fwd", 50);
     armMotors.spinToPosition(235, vex::rotationUnits::deg, true);
     drive(4, "fwd", 50);
-    chainIntake.spinToPosition(0,vex::rotationUnits::deg, true);
+    chainIntake.spinToPosition(0, vex::rotationUnits::deg, true);
     drive(12.5, "rev", 50);
-    armMotors.spinToPosition(0,vex::rotationUnits::deg, true);
+    armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
     turn(134, "left", 50);
   }
   else if (autonSelector == 1)
@@ -1020,7 +1024,7 @@ void autonomous(void)
  * @brief VEX Competition Controlled Function: update GUI, check motors, 1 minute 45 second loop of user-controlled robot movement
  * @relates main()
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 07/28/2024
  */
 void usercontrol(void)
 {
@@ -1092,10 +1096,10 @@ void usercontrol(void)
     }
     else
     {
-      leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
       leftBack.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
-      rightFront.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
       rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
+      leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
+      rightFront.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
     }
 
     // Front Clamp Controls
