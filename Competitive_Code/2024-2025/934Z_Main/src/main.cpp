@@ -57,7 +57,7 @@ brain Brain;
 // VEX Initializations
 controller Controller1 = controller(primary);
 motor chainIntake = motor(PORT17, ratio18_1, false);
-motor leftArm = motor(PORT13, ratio36_1, false);
+motor leftArm = motor(PORT3, ratio36_1, false);
 motor rightArm = motor(PORT18, ratio36_1, true);
 motor leftBack = motor(PORT5, ratio18_1, true);
 motor leftFront = motor(PORT11, ratio18_1, true);
@@ -158,9 +158,9 @@ void turn(double degrees, std::string direction, int velocity)
 
   // Spins the robot's four drive motors based on the given and calculated parameters
   leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-  rightBack.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
+  rightBack.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
   leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-  rightFront.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  rightFront.spinFor(vex::directionType::fwd, motorDegrees * -1, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
 }
 
 /**
@@ -193,9 +193,9 @@ void drive(double inches, std::string direction, int velocity)
 
   // Spins the robot's four drive motors based on the given and calculated parameters
   leftBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-  rightBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
+  rightBack.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
   leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
-  rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
+  rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -960,7 +960,7 @@ void pre_auton(void)
   autonSelection();
   allMotors.setMaxTorque(100, vex::percentUnits::pct);
   allMotors.setVelocity(100, vex::percentUnits::pct);
-  armMotors.setVelocity(80, vex::velocityUnits::pct);
+  armMotors.setVelocity(100, vex::velocityUnits::pct);
   allMotors.setTimeout(5, vex::timeUnits::sec);
   nonDriveMotors.setStopping(vex::brakeType::hold);
   allMotors.resetPosition();
@@ -992,23 +992,25 @@ void autonomous(void)
   if (autonSelector == 0)
   {
     // Main Auton
-    drive(15.50, "fwd", 25);
-    armMotors.spinToPosition(490, vex::rotationUnits::deg, true);
-    drive(5, "fwd", 25);
-    chainIntake.spinToPosition(-250, vex::rotationUnits::deg, true);
-    armMotors.spinToPosition(327, vex::rotationUnits::deg, true);
-    chainIntake.spinToPosition(-600, vex::rotationUnits::deg, true);
+    armMotors.spinToPosition(505, vex::rotationUnits::deg, true);
+    drive(22.5, "fwd", 100);
+    chainIntake.spinToPosition(-300, vex::rotationUnits::deg, true);
+    armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
+    chainIntake.spinToPosition(-800, vex::rotationUnits::deg, true);
+    drive(20.5, "rev", 100);
+    turn(141, "right", 50);
+    armMotors.spinToPosition(450, vex::rotationUnits::deg, true);
+    drive(11.53, "fwd", 100);
+    armMotors.spinToPosition(215,vex::rotationUnits::deg, true);
+    chainIntake.spinToPosition(200 ,vex::rotationUnits::deg, true);
+    turn(70, "left", 50);
+    armMotors.spinToPosition(505 ,vex::rotationUnits::deg, true);
+    drive(25, "fwd", 100);
+    chainIntake.spinToPosition(-300, vex::rotationUnits::deg, true);
+    armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
+    chainIntake.spinToPosition(-800, vex::rotationUnits::deg, true);
     drive(7, "rev", 25);
-    armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
-    drive(6, "rev", 50);
-    turn(140, "right", 50);
-    drive(9.25, "fwd", 50);
-    armMotors.spinToPosition(235, vex::rotationUnits::deg, true);
-    drive(4, "fwd", 50);
-    chainIntake.spinToPosition(0, vex::rotationUnits::deg, true);
-    drive(12.5, "rev", 50);
-    armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
-    turn(134, "left", 50);
+
   }
   else if (autonSelector == 1)
   {
