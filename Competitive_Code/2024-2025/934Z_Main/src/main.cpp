@@ -970,7 +970,7 @@ void pre_auton(void)
  * @brief VEX Competition Controlled Function: update GUI, check motors, 15 seconds of autonomous robot movement
  * @relates main()
  * @authors Leo Abubucker, Jack Deise
- * @date 07/28/2024
+ * @date 08/04/2024
  */
 void autonomous(void)
 {
@@ -993,23 +993,30 @@ void autonomous(void)
   {
     // Main Auton
     armMotors.spinToPosition(505, vex::rotationUnits::deg, true);
-    drive(22.5, "fwd", 100);
-    chainIntake.spinToPosition(-300, vex::rotationUnits::deg, true);
+    drive(22.5, "fwd", 75);
+    chainIntake.spinToPosition(-225, vex::rotationUnits::deg, true);
     armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
-    chainIntake.spinToPosition(-800, vex::rotationUnits::deg, true);
-    drive(20.5, "rev", 100);
-    turn(141, "right", 50);
-    armMotors.spinToPosition(450, vex::rotationUnits::deg, true);
-    drive(11.53, "fwd", 100);
-    armMotors.spinToPosition(215,vex::rotationUnits::deg, true);
-    chainIntake.spinToPosition(200 ,vex::rotationUnits::deg, true);
-    turn(70, "left", 50);
-    armMotors.spinToPosition(505 ,vex::rotationUnits::deg, true);
-    drive(25, "fwd", 100);
-    chainIntake.spinToPosition(-300, vex::rotationUnits::deg, true);
-    armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
-    chainIntake.spinToPosition(-800, vex::rotationUnits::deg, true);
-    drive(7, "rev", 25);
+    chainIntake.spinToPosition(-725, vex::rotationUnits::deg, true);
+    drive(1, "rev", 75);
+    drive(1, "fwd", 75);
+    drive(22.5, "rev", 75);
+    turn(90, "left", 50);
+    armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
+    //drive(33.5, "fwd", 75);
+    armMotors.spinToPosition(130, vex::rotationUnits::deg, true);
+    //drive(20.5, "rev", 75);
+    // turn(140, "right", 75);
+    // armMotors.spinToPosition(450, vex::rotationUnits::deg, true);
+    // drive(10, "fwd", 75);
+    // armMotors.spinToPosition(215,vex::rotationUnits::deg, true);
+    // chainIntake.spinToPosition(200 ,vex::rotationUnits::deg, true);
+    //turn(70, "left", 50);
+    //armMotors.spinToPosition(505 ,vex::rotationUnits::deg, true);
+    //drive(25, "fwd", 100);
+    //chainIntake.spinToPosition(-300, vex::rotationUnits::deg, true);
+    //armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
+    //chainIntake.spinToPosition(-800, vex::rotationUnits::deg, true);
+    //drive(7, "rev", 25);
 
   }
   else if (autonSelector == 1)
