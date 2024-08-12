@@ -56,19 +56,21 @@ brain Brain;
 
 // VEX Initializations
 controller Controller1 = controller(primary);
-motor chainIntake = motor(PORT16, ratio18_1, false);
+motor leftIntake = motor(PORT14, ratio18_1, true);
+motor rightIntake = motor(PORT16, ratio18_1, false);
 motor leftArm = motor(PORT3, ratio36_1, false);
 motor rightArm = motor(PORT18, ratio36_1, true);
 motor leftBack = motor(PORT5, ratio18_1, true);
 motor leftFront = motor(PORT11, ratio18_1, true);
 motor rightBack = motor(PORT10, ratio18_1, false);
 motor rightFront = motor(PORT19, ratio18_1, false);
-motor_group allMotors = motor_group(chainIntake, leftArm, rightArm, leftBack, leftFront, rightBack, rightFront);
+motor_group allMotors = motor_group(rightIntake, leftArm, rightArm, leftBack, leftFront, rightBack, rightFront);
 motor_group driveMotors = motor_group(leftBack, leftFront, rightBack, rightFront);
 motor_group leftDriveMotors = motor_group(leftFront, leftBack);
 motor_group rightDriveMotors = motor_group(rightFront, rightBack);
-motor_group nonDriveMotors = motor_group(chainIntake, leftArm, rightArm);
+motor_group nonDriveMotors = motor_group(rightIntake, leftArm, rightArm);
 motor_group armMotors = motor_group(leftArm, rightArm);
+motor_group intakeMotors = motor_group(leftIntake, rightIntake);
 triport myTriport = triport(Brain.ThreeWirePort);
 pneumatics frontClamp = pneumatics(myTriport.A);
 pneumatics backClamp = pneumatics(myTriport.C);
@@ -954,7 +956,7 @@ void pre_auton(void)
   myMotorCollection.addMotor(leftFront, "LF");
   myMotorCollection.addMotor(rightBack, "RB");
   myMotorCollection.addMotor(rightFront, "RF");
-  myMotorCollection.addMotor(chainIntake, "I");
+  myMotorCollection.addMotor(rightIntake, "I");
   autonSelector = 0;
   drawGUI();
   autonSelection();
@@ -994,9 +996,9 @@ void autonomous(void)
     // Main Auton
     armMotors.spinToPosition(505, vex::rotationUnits::deg, true);
     drive(22.5, "fwd", 75);
-    chainIntake.spinToPosition(-225, vex::rotationUnits::deg, true);
+    rightIntake.spinToPosition(-225, vex::rotationUnits::deg, true);
     armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
-    chainIntake.spinToPosition(-725, vex::rotationUnits::deg, true);
+    rightIntake.spinToPosition(-725, vex::rotationUnits::deg, true);
     drive(1, "rev", 75);
     drive(1, "fwd", 75);
     drive(22.5, "rev", 75);
@@ -1153,15 +1155,15 @@ void usercontrol(void)
     // Intake Controls
     if (Controller1.ButtonL1.pressing())
     {
-      chainIntake.spin(vex::directionType::fwd);
+      intakeMotors.spin(vex::directionType::fwd);
     }
     else if (Controller1.ButtonL2.pressing())
     {
-      chainIntake.spin(vex::directionType::rev);
+      intakeMotors.spin(vex::directionType::rev);
     }
     else
     {
-      chainIntake.stop();
+      intakeMotors.stop();
     }
 
     // Arm Controls
