@@ -56,7 +56,7 @@ brain Brain;
 
 // VEX Initializations
 controller Controller1 = controller(primary);
-motor leftIntake = motor(PORT14, ratio18_1, true);
+motor leftIntake = motor(PORT1, ratio18_1, true);
 motor rightIntake = motor(PORT16, ratio18_1, false);
 motor leftArm = motor(PORT3, ratio36_1, false);
 motor rightArm = motor(PORT18, ratio36_1, true);
@@ -64,7 +64,7 @@ motor leftBack = motor(PORT5, ratio18_1, true);
 motor leftFront = motor(PORT11, ratio18_1, true);
 motor rightBack = motor(PORT10, ratio18_1, false);
 motor rightFront = motor(PORT19, ratio18_1, false);
-motor_group allMotors = motor_group(rightIntake, leftArm, rightArm, leftBack, leftFront, rightBack, rightFront);
+motor_group allMotors = motor_group(rightIntake, leftArm, rightArm, leftBack, leftFront, rightBack, rightFront, leftIntake);
 motor_group driveMotors = motor_group(leftBack, leftFront, rightBack, rightFront);
 motor_group leftDriveMotors = motor_group(leftFront, leftBack);
 motor_group rightDriveMotors = motor_group(rightFront, rightBack);
@@ -956,7 +956,8 @@ void pre_auton(void)
   myMotorCollection.addMotor(leftFront, "LF");
   myMotorCollection.addMotor(rightBack, "RB");
   myMotorCollection.addMotor(rightFront, "RF");
-  myMotorCollection.addMotor(rightIntake, "I");
+  myMotorCollection.addMotor(rightIntake, "RI");
+  myMotorCollection.addMotor(leftIntake, "LI");
   autonSelector = 0;
   drawGUI();
   autonSelection();
