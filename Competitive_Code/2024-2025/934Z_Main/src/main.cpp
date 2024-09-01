@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
 /*    Module:       main.cpp                                                  */
-/*    Author:       Leo Abubucker                                             */
+/*    Authors:      Leo Abubucker, Jack Deise                                 */
 /*    Created:      05/05/2024                                                */
 /*    Description:  The main code for VEX VRC Team 934Z's 2024-2025 Season    */
 /*                                                                            */
@@ -199,105 +199,6 @@ void drive(double inches, std::string direction, int velocity)
   leftFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, false);
   rightFront.spinFor(vex::directionType::fwd, motorDegrees, vex::rotationUnits::deg, velocity, vex::velocityUnits::pct, true);
 }
-
-/*---------------------------------------------------------------------------*/
-/*                        PID CONTROL                                        */
-/*  NOT FUNCTIONAL - LEAVE COMMENTED OUT                                     */
-/*---------------------------------------------------------------------------*/
-/// @bug
-/* START BLOCK COMMENT FOR BUG
-
-// Constant Settings
-double kP = 1.0;
-double kI = 0.0;
-double kD = 0.0;
-
-double turnkP = 0.0;
-double turnkI = 0.0;
-double turnkD = 0.0;
-
-//Dynamic Settings
-int desiredValue = 0;
-int desiredTurnValue = 0;
-
-int error; //Sensor Value - Desired Value : Position
-int prevError = 0; //Position 20msec ago
-int derivative;
-int totalError = 0;//totalError += error
-
-int turnError; //Sensor Value - Desired Value : Position
-int turnPrevError = 0; //Position 20msec ago
-int turnDerivative;
-int turnTotalError = 0;//totalError += error
-
-bool resetDriveSensors = false;
-
-bool enableDrivePID = true;
-
-int drivePID(){
-  while(enableDrivePID){
-
-    if(resetDriveSensors){
-      resetDriveSensors = false;
-      driveMotors.resetPosition();
-    }
-    //Get Motor Positions
-    int lfPosition = leftFront.position(vex::rotationUnits::deg);
-    int rfPosition = rightFront.position(vex::rotationUnits::deg);
-    int lbPosition = leftBack.position(vex::rotationUnits::deg);
-    int rbPosition = rightBack.position(vex::rotationUnits::deg);
-
-  ////////////////////////////////////////////////////////////////
-  //                  Lateral Movement PID                      //
-  ////////////////////////////////////////////////////////////////
-
-
-    //Get Avg Motor Positions
-    int frontMotorAvgPosition = (lfPosition + rfPosition)/2;
-    int backMotorAvgPosition = (lbPosition + rbPosition)/2;
-
-    //Potential
-    error = backMotorAvgPosition - desiredValue;
-
-    //Derivative
-    derivative = error - prevError;
-
-    //Integral
-    totalError += error;
-
-    double lateralMotorDegrees = (error * kP + derivative * kD + totalError * kI)/360;
-
-  ////////////////////////////////////////////////////////////////
-  //                  Turn Movement PID                         //
-  ////////////////////////////////////////////////////////////////
-
-    //Get Avg Motor Positions
-    int frontMotorTurnDifference= lfPosition - rfPosition;
-    int backMotorTurnDifference = lbPosition - rbPosition;
-
-    //Potential
-    turnError = backMotorTurnDifference - desiredValue;
-
-    //Derivative
-    turnDerivative = turnError - turnPrevError;
-
-    //Integral
-    turnTotalError += turnError;
-
-    double turnMotorDegrees = (turnError * turnkP + turnDerivative * turnkD + turnTotalError * turnkI)/360;
-
-    leftDriveMotors.spin(vex::directionType::fwd, lateralMotorDegrees + turnMotorDegrees, vex::voltageUnits::volt);
-    rightDriveMotors.spin(vex::directionType::fwd, lateralMotorDegrees - turnMotorDegrees, vex::voltageUnits::volt);
-
-
-    prevError = error;
-    turnPrevError = turnError;
-    vex::task::sleep(20);
-  }
-  return 1;
-}
-
- END BLOCK COMMENT FOR BUG */
 
 /**
  * @brief MotorCollection class provides additional functionality to VEX V5 motors
@@ -946,9 +847,9 @@ void autonSelection()
  * @brief VEX Competition Controlled Function: pre-game initializations, GUI loading, auton selection prompting
  * @relates main()
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 09/01/2024
  */
-void pre_auton(void)
+void pre_auton()
 {
   myMotorCollection.addMotor(leftArm, "LA");
   myMotorCollection.addMotor(rightArm, "RA");
@@ -973,24 +874,13 @@ void pre_auton(void)
  * @brief VEX Competition Controlled Function: update GUI, check motors, 15 seconds of autonomous robot movement
  * @relates main()
  * @authors Leo Abubucker, Jack Deise
- * @date 08/04/2024
+ * @date 09/01/2024
  */
-void autonomous(void)
+void autonomous()
 {
+  // Initializations
   drawGUI();
   myMotorCollection.isConnected();
-
-  /// @bug
-  /* START BLOCK COMMENT FOR BUG
-
-  vex::task PIDTask(drivePID);
-  resetDriveSensors = true;
-  desiredValue = 600;
-  vex::task::sleep(100);
-  resetDriveSensors = true;
-  desiredTurnValue = 300;
-
-  END BLOCK COMMENT FOR BUG */
 
   if (autonSelector == 0)
   {
@@ -1005,21 +895,7 @@ void autonomous(void)
     drive(22.5, "rev", 75);
     turn(90, "left", 50);
     armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
-    // drive(33.5, "fwd", 75);
     armMotors.spinToPosition(130, vex::rotationUnits::deg, true);
-    // drive(20.5, "rev", 75);
-    //  turn(140, "right", 75);
-    //  armMotors.spinToPosition(450, vex::rotationUnits::deg, true);
-    //  drive(10, "fwd", 75);
-    //  armMotors.spinToPosition(215,vex::rotationUnits::deg, true);
-    //  chainIntake.spinToPosition(200 ,vex::rotationUnits::deg, true);
-    // turn(70, "left", 50);
-    // armMotors.spinToPosition(505 ,vex::rotationUnits::deg, true);
-    // drive(25, "fwd", 100);
-    // chainIntake.spinToPosition(-300, vex::rotationUnits::deg, true);
-    // armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
-    // chainIntake.spinToPosition(-800, vex::rotationUnits::deg, true);
-    // drive(7, "rev", 25);
   }
   else if (autonSelector == 1)
   {
@@ -1035,9 +911,9 @@ void autonomous(void)
  * @brief VEX Competition Controlled Function: update GUI, check motors, 1 minute 45 second loop of user-controlled robot movement
  * @relates main()
  * @author Leo Abubucker
- * @date 07/28/2024
+ * @date 09/01/2024
  */
-void usercontrol(void)
+void usercontrol()
 {
   drawGUI();
   bool frontClampState = false;
