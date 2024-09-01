@@ -1005,22 +1005,21 @@ void autonomous(void)
     drive(22.5, "rev", 75);
     turn(90, "left", 50);
     armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
-    //drive(33.5, "fwd", 75);
+    // drive(33.5, "fwd", 75);
     armMotors.spinToPosition(130, vex::rotationUnits::deg, true);
-    //drive(20.5, "rev", 75);
-    // turn(140, "right", 75);
-    // armMotors.spinToPosition(450, vex::rotationUnits::deg, true);
-    // drive(10, "fwd", 75);
-    // armMotors.spinToPosition(215,vex::rotationUnits::deg, true);
-    // chainIntake.spinToPosition(200 ,vex::rotationUnits::deg, true);
-    //turn(70, "left", 50);
-    //armMotors.spinToPosition(505 ,vex::rotationUnits::deg, true);
-    //drive(25, "fwd", 100);
-    //chainIntake.spinToPosition(-300, vex::rotationUnits::deg, true);
-    //armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
-    //chainIntake.spinToPosition(-800, vex::rotationUnits::deg, true);
-    //drive(7, "rev", 25);
-
+    // drive(20.5, "rev", 75);
+    //  turn(140, "right", 75);
+    //  armMotors.spinToPosition(450, vex::rotationUnits::deg, true);
+    //  drive(10, "fwd", 75);
+    //  armMotors.spinToPosition(215,vex::rotationUnits::deg, true);
+    //  chainIntake.spinToPosition(200 ,vex::rotationUnits::deg, true);
+    // turn(70, "left", 50);
+    // armMotors.spinToPosition(505 ,vex::rotationUnits::deg, true);
+    // drive(25, "fwd", 100);
+    // chainIntake.spinToPosition(-300, vex::rotationUnits::deg, true);
+    // armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
+    // chainIntake.spinToPosition(-800, vex::rotationUnits::deg, true);
+    // drive(7, "rev", 25);
   }
   else if (autonSelector == 1)
   {
@@ -1170,63 +1169,23 @@ void usercontrol(void)
     // Arm Controls
     if (Controller1.ButtonUp.pressing())
     {
-      if (Controller1.ButtonR1.pressing())
-      {
-        if (armMotors.position(vex::rotationUnits::deg) < 520)
-        {
-          armMotors.spinToPosition(520, vex::rotationUnits::deg);
-        }
-        else if (armMotors.position(vex::rotationUnits::deg) < 600)
-        {
-          armMotors.spinToPosition(600, vex::rotationUnits::deg);
-        }
-        else if (armMotors.position(vex::rotationUnits::deg) < 711)
-        {
-          armMotors.spinToPosition(711, vex::rotationUnits::deg);
-        }
-        else if (armMotors.position(vex::rotationUnits::deg) < 922)
-        {
-          armMotors.spinToPosition(922, vex::rotationUnits::deg);
-        }
-      }
-      else if (Controller1.ButtonR2.pressing())
-      {
-        if (armMotors.position(vex::rotationUnits::deg) >= 922)
-        {
-          armMotors.spinToPosition(711, vex::rotationUnits::deg);
-        }
-        else if (armMotors.position(vex::rotationUnits::deg) >= 711)
-        {
-          armMotors.spinToPosition(600, vex::rotationUnits::deg);
-        }
-        else if (armMotors.position(vex::rotationUnits::deg) >= 600)
-        {
-          armMotors.spinToPosition(520, vex::rotationUnits::deg);
-        }
-        else if (armMotors.position(vex::rotationUnits::deg) >= 520)
-        {
-          armMotors.spinToPosition(0, vex::rotationUnits::deg);
-        }
-      }
-      else
-      {
-        armMotors.stop();
-      }
+      armMotors.spinToPosition(720, vex::rotationUnits::deg, true);
+    }
+    else if (Controller1.ButtonDown.pressing())
+    {
+      armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
+    }
+    else if (Controller1.ButtonR1.pressing())
+    {
+      armMotors.spin(vex::directionType::fwd);
+    }
+    else if (Controller1.ButtonR2.pressing())
+    {
+      armMotors.spin(vex::directionType::rev);
     }
     else
     {
-      if (Controller1.ButtonR1.pressing())
-      {
-        armMotors.spin(vex::directionType::fwd);
-      }
-      else if (Controller1.ButtonR2.pressing())
-      {
-        armMotors.spin(vex::directionType::rev);
-      }
-      else
-      {
-        armMotors.stop();
-      }
+      armMotors.stop();
     }
 
     // Sleep the task for a short amount of time to prevent wasted resources - DO NOT REMOVE
