@@ -236,7 +236,7 @@ class SignInWindow(customtkinter.CTkFrame):
         self.loginBtn.place(relwidth=0.2, relheight=0.1, relx=0.4, rely=0.6)
 
         self.newAccnBtn = customtkinter.CTkButton(self, fg_color="transparent", text="New? Sign Up Here", font=generateFont('Roboto', 20), text_color="cyan", command=lambda:[forgetFrame(self), loadFrame(SignUpWindow, self.container)])
-        self.newAccnBtn.place(relwidth=0.2, relheight=0.1, relx=0.4, rely=0.75)
+        self.newAccnBtn.place(relwidth=0.25, relheight=0.1, relx=0.375, rely=0.75)
 
     def login(self):
         """
@@ -626,7 +626,7 @@ class Main(customtkinter.CTk):
 
         self.licenseLink = customtkinter.CTkLabel(self, text="MIT License", text_color="cyan", font=generateFont('Roboto', 20, underline=True), cursor="hand2")     
         self.licenseLink.bind("<Button-1>", lambda e:webbrowser.open_new("https://choosealicense.com/licenses/mit/")) 
-        self.licenseLink.place(relx=0.534, rely=0.85)
+        self.licenseLink.place(relx=0.547, rely=0.85)
 
     def initDb(self):
         """
