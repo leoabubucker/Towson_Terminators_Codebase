@@ -98,24 +98,15 @@ class SignUpWindow(customtkinter.CTkFrame):
         res = cursor.execute("SELECT last_name from users")
         allNames = res.fetchall()
 
-        #Creates a new row in the users table with inputted data if the inputted last name is unique, launches the sign in window with predefined data if succeeds
-        lastNameIsUnique = True
+        #Creates a new row in the users table with inputted data, launches the sign in window with predefined data if succeeds
         self.form_options = [self.firstNameEntry.get(), self.lastNameEntry.get(), int(self.gradeEntry.get()), self.phoneNumberEntry.get(), self.teamEntry.get()]
-        for lst in allNames:
-            if(lst[0] == self.lastNameEntry.get()):
-                lastNameIsUnique = False
 
-        if(lastNameIsUnique):
-            cursor.execute("INSERT INTO users (first_name, last_name, grade, phone_number, team) VALUES (?, ?, ?, ?, ?)", self.form_options)
-            conn.commit()
-            conn.close()
-            forgetFrame(self)
-            loadNotification(self.container, "lime green", "black", "Welcome New User - " + self.firstNameEntry.get(), 2000)
-            SignInWindow(self.container, self.form_options)
-        else:
-            forgetFrame(self)
-            loadNotification(self.container, "red", "black", "Error - Sign Up Failed", 2000)
-
+        cursor.execute("INSERT INTO users (first_name, last_name, grade, phone_number, team) VALUES (?, ?, ?, ?, ?)", self.form_options)
+        conn.commit()
+        conn.close()
+        forgetFrame(self)
+        loadNotification(self.container, "lime green", "black", "Welcome New User - " + self.firstNameEntry.get(), 2000)
+        SignInWindow(self.container, self.form_options)
 class SignOutWindow(customtkinter.CTkFrame):
     """
     This class represents the Sign Out GUI popup and associated functionality. 
@@ -647,7 +638,7 @@ class Main(customtkinter.CTk):
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 first_name TEXT NOT NULL,
-                last_name TEXT UNIQUE NOT NULL,
+                last_name TEXT NOT NULL,
                 grade INTEGER NOT NULL,
                 phone_number TEXT UNIQUE,
                 team TEXT
