@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <sstream>
+
 using namespace vex;
 
 /*------------------------------------------------------------------------------------*/
@@ -72,14 +73,47 @@ motor_group nonDriveMotors = motor_group(rightIntake, leftArm, rightArm);
 motor_group armMotors = motor_group(leftArm, rightArm);
 motor_group intakeMotors = motor_group(leftIntake, rightIntake);
 triport myTriport = triport(Brain.ThreeWirePort);
-pneumatics frontClamp = pneumatics(myTriport.A);
-pneumatics backClamp = pneumatics(myTriport.C);
+pneumatics clamp = pneumatics(myTriport.A);
 bumper autonSelectionBumper = bumper(myTriport.E);
 bumper autonConfirmationBumper = bumper(myTriport.G);
 
 // Non-VEX Declarations
 int autonSelector;
 std::map<std::string, int> autonSelectorFrame;
+enum DriveConfigurations
+{
+  FOUR_WHEEL,
+  REAR_WHEEL,
+  FRONT_WHEEL,
+  RFLB,
+  LFRB
+};
+DriveConfigurations driveConfig;
+enum Keywords
+{
+  GAME_STATE,
+  MOTOR_CARTRIDGE,
+  USER_INPUT,
+  MOTOR_CONNECTION,
+  CONTROLLER_CONNECTION,
+  MOTOR_TEMPERATURE,
+  BATTERY
+};
+enum GameStates
+{
+  AUTONOMOUS,
+  PRE_AUTONOMOUS,
+  USER_CONTROL,
+  DISABLED,
+  ENABLED
+};
+enum MovementDirections
+{
+  LEFT,
+  RIGHT,
+  FORWARD,
+  REVERSE
+};
 
 // Non-VEX Intializations
 bool waitingForUserInput = false;
@@ -143,7 +177,7 @@ std::string to_string(T value)
  * @authors Leo Abubucker, Jack Deise
  * @date 07/28/2024
  */
-void turn(double degrees, std::string direction, int velocity)
+void turn(double degrees, MovementDirections direction, int velocity)
 {
   // Constant benchmarks
   const int motorDegreesFor90DegreeTurn = 257;
@@ -153,7 +187,7 @@ void turn(double degrees, std::string direction, int velocity)
   double motorDegrees = motorDegreesPerDegreeTurn * degrees;
 
   // Inverts spin direction to turn left
-  if (direction == "left")
+  if (direction == LEFT)
   {
     motorDegrees *= -1;
   }
@@ -178,7 +212,7 @@ void turn(double degrees, std::string direction, int velocity)
  * @author Leo Abubucker, Jack Deise
  * @date 07/28/2024
  */
-void drive(double inches, std::string direction, int velocity)
+void drive(double inches, MovementDirections direction, int velocity)
 {
   // Constant benchmarks
   const int motorDegreesFor24Inches = 600;
@@ -188,7 +222,7 @@ void drive(double inches, std::string direction, int velocity)
   double motorDegrees = motorDegreesPerInch * inches;
 
   // Inverts spin direction to move backwards
-  if (direction == "rev")
+  if (direction == REVERSE)
   {
     motorDegrees *= -1;
   }
@@ -264,11 +298,11 @@ public:
    * @author Leo Abubucker
    * @date 06/14/2024
    */
-  std::string checkMotors()
+  void checkMotors()
   {
     std::vector<bool> motorConnections = isConnected();
     std::vector<std::string> disconnectedMotorNames;
-    std::string updatedDriveConfig = "fourWheel";
+    driveConfig = FOUR_WHEEL;
     for (int i = 0; i < motorConnections.size(); i++)
     {
       if (motorConnections[i] == false)
@@ -279,26 +313,25 @@ public:
     if (std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LF") != disconnectedMotorNames.end() || std::find(disconnectedMotorNames.begin(),
                                                                                                                                    disconnectedMotorNames.end(), "RF") != disconnectedMotorNames.end())
     {
-      updatedDriveConfig = "rearWheel";
+      driveConfig = REAR_WHEEL;
     }
 
     if (std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LB") != disconnectedMotorNames.end() || std::find(disconnectedMotorNames.begin(),
                                                                                                                                    disconnectedMotorNames.end(), "RB") != disconnectedMotorNames.end())
     {
-      updatedDriveConfig = "frontWheel";
+      driveConfig = FRONT_WHEEL;
     }
 
     if (std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LF") != disconnectedMotorNames.end() && std::find(disconnectedMotorNames.begin(),
                                                                                                                                    disconnectedMotorNames.end(), "RB") != disconnectedMotorNames.end())
     {
-      updatedDriveConfig = "RFLB";
+      driveConfig = RFLB;
     }
     if (std::find(disconnectedMotorNames.begin(), disconnectedMotorNames.end(), "LB") != disconnectedMotorNames.end() || std::find(disconnectedMotorNames.begin(),
                                                                                                                                    disconnectedMotorNames.end(), "RF") != disconnectedMotorNames.end())
     {
-      updatedDriveConfig = "LFRB";
+      driveConfig = LFRB;
     }
-    return updatedDriveConfig;
   }
 
   /**
@@ -353,26 +386,26 @@ MotorCollection myMotorCollection;
  * @author Leo Abubucker
  * @date 07/21/2024
  */
-std::string getCompetitionStatus()
+GameStates getCompetitionStatus()
 {
   if (Competition.isEnabled())
   {
     if (Competition.isAutonomous())
     {
-      return "AUTON";
+      return AUTONOMOUS;
     }
     else if (Competition.isDriverControl())
     {
-      return "DRIVER";
+      return USER_CONTROL;
     }
     else
     {
-      return "PRE-AUTON";
+      return PRE_AUTONOMOUS;
     }
   }
   else
   {
-    return "DISABLED";
+    return DISABLED;
   }
 }
 
@@ -389,9 +422,9 @@ std::string getCompetitionStatus()
  * @author Leo Abubucker
  * @date 07/21/2024
  */
-vex::color getColorFromValue(std::string value, std::string keyword)
+vex::color getColorFromValue(std::string value, Keywords keyword)
 {
-  if (keyword == "gameState")
+  if (keyword == GAME_STATE)
   {
     if (value == "AUTON")
     {
@@ -410,7 +443,7 @@ vex::color getColorFromValue(std::string value, std::string keyword)
       return color::red;
     }
   }
-  else if (keyword == "motorCartridge")
+  else if (keyword == MOTOR_CARTRIDGE)
   {
     if (value == "Green")
     {
@@ -441,9 +474,9 @@ vex::color getColorFromValue(std::string value, std::string keyword)
  * @author Leo Abubucker
  * @date 07/28/2024
  */
-vex::color getColorFromValue(bool value, std::string keyword)
+vex::color getColorFromValue(bool value, Keywords keyword)
 {
-  if (keyword == "userInput")
+  if (keyword == USER_INPUT)
   {
     if (value)
     {
@@ -454,7 +487,7 @@ vex::color getColorFromValue(bool value, std::string keyword)
       return color::green;
     }
   }
-  else if (keyword == "motorConnection")
+  else if (keyword == MOTOR_CONNECTION)
   {
     if (value)
     {
@@ -465,7 +498,7 @@ vex::color getColorFromValue(bool value, std::string keyword)
       return color::red;
     }
   }
-  else if (keyword == "controllerConnection")
+  else if (keyword == CONTROLLER_CONNECTION)
   {
     if (value)
     {
@@ -492,9 +525,9 @@ vex::color getColorFromValue(bool value, std::string keyword)
  * @author Leo Abubucker
  * @date 07/21/2024
  */
-vex::color getColorFromValue(int value, std::string keyword)
+vex::color getColorFromValue(int value, Keywords keyword)
 {
-  if (keyword == "motorTemperature")
+  if (keyword == MOTOR_TEMPERATURE)
   {
     if (value < 104)
     {
@@ -509,7 +542,7 @@ vex::color getColorFromValue(int value, std::string keyword)
       return color::red;
     }
   }
-  else if (keyword == "battery")
+  else if (keyword == BATTERY)
   {
     if (value > 80)
     {
@@ -527,6 +560,43 @@ vex::color getColorFromValue(int value, std::string keyword)
   return color::white;
 }
 
+/**
+ * @brief gets a vex::color based on an int value and std::string keyword
+ * @details This function takes an int keyword and std::string value and returns a vex::color based
+ * on specific condition(s) that the value meets. The conditions that are used are based on the keyword.
+ * @relates drawMotorDebugFrame(), drawBatteryInfoFrame()
+ * @overload getColorFromValue(std::string value, std::string keyword)
+ * @overload getColorFromVaue(bool value, std::string keyword)
+ * @param value int value that determines color
+ * @param keyword std::string keyword that determines which conditions value is checked. Valid keywords are "gameState" or "motorCartridge"
+ * @returns vex::color determined by value. Returns color::white if no value, keyword pair matches.
+ * @author Leo Abubucker
+ * @date 07/21/2024
+ */
+vex::color getColorFromValue(GameStates value, Keywords keyword)
+{
+  if (keyword == GAME_STATE)
+  {
+    if (value == AUTONOMOUS)
+    {
+      return color::orange;
+    }
+    else if (value == USER_CONTROL)
+    {
+      return color::green;
+    }
+    else if (value == PRE_AUTONOMOUS)
+    {
+      return color::yellow;
+    }
+    else
+    {
+      return color::red;
+    }
+  }
+
+  return color::white;
+}
 /**
  * @brief draws the GUI controls frame
  * @relates drawGUI()
@@ -546,7 +616,7 @@ void drawControlsFrame()
   Brain.Screen.drawRectangle(controlsFrame["x-left"], controlsFrame["y-top"], controlsFrame["x-right"] - controlsFrame["x-left"], controlsFrame["y-bottom"] - controlsFrame["y-top"], color(128, 0, 0));
 
   // Prints Controls in the frame
-  std::vector<std::string> controls = {"Driving - Tank", "Lift Arm - R1", "Lower Arm - R2", "Intake - L1", "Outtake - L2", "Clamp - X", "Toggle - Up", "Update GUIs - Y"};
+  std::vector<std::string> controls = {"Driving - Tank", "Lift Arm - R1", "Lower Arm - R2", "Intake - L1", "Outtake - L2", "Clamp - X", "Toggle - Up"};
   Brain.Screen.setFillColor(color(128, 0, 0));
   Brain.Screen.setPenColor(color::white);
   Brain.Screen.setCursor(1, 5);
@@ -583,7 +653,7 @@ void drawAutonSelectorFrame()
   Brain.Screen.print("Auton: ");
   Brain.Screen.print(autonSelector);
   Brain.Screen.setCursor(11, 2);
-  Brain.Screen.setPenColor(getColorFromValue(waitingForUserInput, "userInput"));
+  Brain.Screen.setPenColor(getColorFromValue(waitingForUserInput, USER_INPUT));
   if (waitingForUserInput)
   {
     Brain.Screen.print("UNLOCKED");
@@ -617,9 +687,9 @@ void drawModeDisplayFrame()
   // Gets and prints the color-coordinated current game state in the frame
   Brain.Screen.setCursor(10, 13);
   Brain.Screen.print("Mode: ");
-  std::string currentMode = getCompetitionStatus();
-  Brain.Screen.setPenColor(getColorFromValue(currentMode, "gameState"));
-  if (currentMode == "DISABLED")
+  GameStates currentMode = getCompetitionStatus();
+  Brain.Screen.setPenColor(getColorFromValue(currentMode, GAME_STATE));
+  if (currentMode == DISABLED)
   {
     Brain.Screen.setCursor(11, 11);
   }
@@ -627,7 +697,7 @@ void drawModeDisplayFrame()
   {
     Brain.Screen.setCursor(11, 12);
   }
-  Brain.Screen.print(currentMode.c_str());
+  Brain.Screen.print(currentMode);
   Brain.Screen.setPenColor(color::white);
 }
 
@@ -658,20 +728,20 @@ void drawMotorDebugFrame()
   for (int i = 0; i < motorInfo.size(); i++)
   {
     Brain.Screen.setCursor(row, 20);
-    Brain.Screen.setPenColor(getColorFromValue(motorConnections[i], "motorConnection"));
+    Brain.Screen.setPenColor(getColorFromValue(motorConnections[i], MOTOR_CONNECTION));
 
     for (int j = 0; j < motorInfo[0].size(); j++)
     {
       switch (j)
       {
       case (2):
-        Brain.Screen.setPenColor(getColorFromValue(motorInfo[i][j], "motorCartridge"));
+        Brain.Screen.setPenColor(getColorFromValue(motorInfo[i][j], MOTOR_CARTRIDGE));
         break;
 
       case (6):
       case (7):
         int motorTemp = atoi(motorInfo[i][j].c_str());
-        Brain.Screen.setPenColor(getColorFromValue(motorTemp, "motorTemperature"));
+        Brain.Screen.setPenColor(getColorFromValue(motorTemp, MOTOR_TEMPERATURE));
         break;
       }
       Brain.Screen.print(motorInfo[i][j].c_str());
@@ -703,7 +773,7 @@ void drawBatteryInfoFrame()
   Brain.Screen.setCursor(10, 20);
   Brain.Screen.print("Battery:");
   Brain.Screen.setCursor(11, 22);
-  Brain.Screen.setPenColor(getColorFromValue((int)Brain.Battery.capacity(), "battery"));
+  Brain.Screen.setPenColor(getColorFromValue((int)Brain.Battery.capacity(), BATTERY));
   Brain.Screen.print("%d%%", Brain.Battery.capacity());
   Brain.Screen.setPenColor(color::white);
 }
@@ -730,7 +800,7 @@ void drawControllerInfoFrame()
   Brain.Screen.setCursor(11, 29);
 
   // Gets and prints the color-coordinated controller connection in the frame
-  Brain.Screen.setPenColor(getColorFromValue(Controller1.installed(), "controllerConnection"));
+  Brain.Screen.setPenColor(getColorFromValue(Controller1.installed(), CONTROLLER_CONNECTION));
   if (Controller1.installed())
   {
     Brain.Screen.print("CONNECTED");
@@ -751,12 +821,16 @@ void drawControllerInfoFrame()
  */
 void drawGUI()
 {
-  drawControlsFrame();
-  drawAutonSelectorFrame();
-  drawModeDisplayFrame();
-  drawMotorDebugFrame();
-  drawBatteryInfoFrame();
-  drawControllerInfoFrame();
+  while (true)
+  {
+    drawControlsFrame();
+    drawAutonSelectorFrame();
+    drawModeDisplayFrame();
+    drawMotorDebugFrame();
+    drawBatteryInfoFrame();
+    drawControllerInfoFrame();
+    wait(5, vex::timeUnits::sec);
+  }
 }
 
 /**
@@ -828,114 +902,33 @@ void autonSelection()
   drawGUI();
 }
 
-/*------------------------------------------------------------------------------------*/
-/*                                                                                    */
-/*                       VEX COMPETITION CONTROLLED FUNCTIONS                         */
-/*                                                                                    */
-/*  VEX competition controlled functions are those that are automatically called by   */
-/*  VEX tournament management systems and should not be manually called except by     */
-/*  the VEX competition controlled function main().                                    */
-/*  Includes:                                                                         */
-/*  - void pre_auton() - pre-game initializations, GUI loading, auton selection       */
-/*  - void autonomous() - update GUI, check motors, 15 sec autonomous robot movement  */
-/*  - void usercontrol() - update GUI, check motors, 1m45s loop of user-controlled    */
-/*    robot movement                                                                  */
-/*  - int main() - controls all other VEX controlled functions - DO NOT EDIT          */
-/*------------------------------------------------------------------------------------*/
-
 /**
- * @brief VEX Competition Controlled Function: pre-game initializations, GUI loading, auton selection prompting
- * @relates main()
+ * @brief
+ * @relates
  * @author Leo Abubucker
- * @date 09/01/2024
+ * @date
  */
-void pre_auton()
+void motorTracking()
 {
-  myMotorCollection.addMotor(leftArm, "LA");
-  myMotorCollection.addMotor(rightArm, "RA");
-  myMotorCollection.addMotor(leftBack, "LB");
-  myMotorCollection.addMotor(leftFront, "LF");
-  myMotorCollection.addMotor(rightBack, "RB");
-  myMotorCollection.addMotor(rightFront, "RF");
-  myMotorCollection.addMotor(rightIntake, "RI");
-  myMotorCollection.addMotor(leftIntake, "LI");
-  autonSelector = 0;
-  drawGUI();
-  autonSelection();
-  allMotors.setMaxTorque(100, vex::percentUnits::pct);
-  allMotors.setVelocity(100, vex::percentUnits::pct);
-  armMotors.setVelocity(100, vex::velocityUnits::pct);
-  allMotors.setTimeout(5, vex::timeUnits::sec);
-  nonDriveMotors.setStopping(vex::brakeType::hold);
-  allMotors.resetPosition();
-}
+  while (true)
+  {
 
-/**
- * @brief VEX Competition Controlled Function: update GUI, check motors, 15 seconds of autonomous robot movement
- * @relates main()
- * @authors Leo Abubucker, Jack Deise
- * @date 09/01/2024
- */
-void autonomous()
-{
-  // Initializations
-  drawGUI();
-  myMotorCollection.isConnected();
-
-  if (autonSelector == 0)
-  {
-    // Main Auton
-    armMotors.spinToPosition(505, vex::rotationUnits::deg, true);
-    drive(22.5, "fwd", 75);
-    rightIntake.spinToPosition(-225, vex::rotationUnits::deg, true);
-    armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
-    rightIntake.spinToPosition(-725, vex::rotationUnits::deg, true);
-    drive(1, "rev", 75);
-    drive(1, "fwd", 75);
-    drive(22.5, "rev", 75);
-    turn(90, "left", 50);
-    armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
-    armMotors.spinToPosition(130, vex::rotationUnits::deg, true);
-  }
-  else if (autonSelector == 1)
-  {
-    // Alternative Auton
-  }
-  else if (autonSelector == 2)
-  {
-    // NO AUTON - LEAVE BLANK
+    myMotorCollection.checkMotors();
+    wait(5, vex::timeUnits::sec);
   }
 }
 
 /**
- * @brief VEX Competition Controlled Function: update GUI, check motors, 1 minute 45 second loop of user-controlled robot movement
- * @relates main()
+ * @brief
+ * @relates
  * @author Leo Abubucker
- * @date 09/01/2024
+ * @date
  */
-void usercontrol()
+void timeTracking()
 {
-  drawGUI();
-  bool frontClampState = false;
-  bool frontClampLastState = false;
-  bool backClampState = false;
-  bool backClampLastState = false;
-
-  /// @bug enableDrivePID = false;
-
   int timeCheck = 0;
-  // Checks motor statuses and switches drive mode (4-wheel, front-wheel, rear-wheel, LFRB, RFLB)
-  std::string driveConfig = myMotorCollection.checkMotors();
-
-  // User control code here, inside the loop
-  while (1)
+  while (true)
   {
-    // Check Motors and Update GUI
-    if (Controller1.ButtonY.pressing())
-    {
-      driveConfig = myMotorCollection.checkMotors();
-      drawGUI();
-    }
 
     // Time update on controller at 1 minute, 30 seconds, and 10 seconds
     if (atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 63 && timeCheck == 0)
@@ -959,24 +952,577 @@ void usercontrol()
       Controller1.Screen.print("10 Seconds Remaining");
       timeCheck++;
     }
+  }
+}
 
+/**
+ * @brief
+ * @relates
+ * @author Leo Abubucker
+ * @date
+ */
+void autonomousTracking()
+{
+  // (abs(Controller1.Axis3.value()) < AXIS_DEVIATION) && (abs(Controller1.Axis2.value()) < AXIS_DEVIATION) &&
+  // const int AXIS_DEVIATION = 5;
+  // // Drivetrain Tracking
+  // double currentLeftDrivePosition = (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0;
+  // double currentRightDrivePosition = (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0;
+  // double currentArmPosition = (leftArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
+  // double currentIntakePosition = (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0;
+  // bool currentClampPosition = clamp.value(); // True (1) is extended, False (0) is retracted
+  float lfPos;
+  float lbPos;
+  float rfPos;
+  float rbPos;
+  while (true)
+  {
+
+    // If drive motors aren't spinning and there is a difference in either position
+    // if (((currentLeftDrivePosition != (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0) || (currentRightDrivePosition != (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0)))
+    // {
+    // currentLeftDrivePosition = (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0;
+    // currentRightDrivePosition = (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0;
+    // float lfPosition = leftFront.position(vex::rotationUnits::deg);
+    // float lbPosition = leftBack.position(vex::rotationUnits::deg);
+    // float rfPosition = rightFront.position(vex::rotationUnits::deg);
+    // float rbPosition = rightBack.position(vex::rotationUnits::deg);
+
+    // std::string lFPrint = "leftFront.spinToPosition(" + to_string(lfPosition) + ", vex::rotationUnits::deg, false);";
+    // std::string lBPrint = "leftBack.spinToPosition(" + to_string(lbPosition) + ", vex::rotationUnits::deg, false);";
+    // std::string rFPrint = "rightFront.spinToPosition(" + to_string(rfPosition) + ", vex::rotationUnits::deg, false);";
+    // std::string rBPrint = "rightBack.spinToPosition(" + to_string(rbPosition) + ", vex::rotationUnits::deg, true);";
+    // std::string waitStatement = "wait(25, msec);";
+    // std::cout << lFPrint;
+    // std::cout << lBPrint;
+    // std::cout << rFPrint;
+    // std::cout << rBPrint;
+    // std::cout << waitStatement;
+    lfPos = leftFront.position(degrees);
+    lbPos = leftBack.position(degrees);
+    rfPos = rightFront.position(degrees);
+    rbPos = rightBack.position(degrees);
+
+    // if ((leftFront.position(degrees) != lfPos))
+    // {
+      lfPos = leftFront.position(degrees);
+      lbPos = leftBack.position(degrees);
+      rfPos = rightFront.position(degrees);
+      rbPos = rightBack.position(degrees);
+      printf("leftFront.spinToPosition(%f, degrees, false);\n", lfPos);
+      printf("leftBack.spinToPosition(%f, degrees, false);\n", lbPos);
+      printf("rightFront.spinToPosition(%f, degrees, false);\n", rfPos);
+      printf("rightBack.spinToPosition(%f, degrees, false);\n", rbPos);
+      printf("wait(250, msec);\n");
+      wait(250, msec);
+    // }
+
+    // }
+
+    // Printing to SD Card if Attached
+    // if (Brain.SDcard.isInserted())
+    // {
+    //   FILE *autonProg = fopen("autonProg.txt", "a");
+    //   std::string leftDriveStr = "LD" + to_string(currentLeftDrivePosition) + "\n";
+    //   std::string rightDriveStr = "RD" + to_string(currentRightDrivePosition) + "\n";
+    //   fprintf(autonProg, leftDriveStr.c_str());
+    //   fprintf(autonProg, rightDriveStr.c_str());
+    //   fclose(autonProg);
+    // }
+
+    // Arm Tracking
+
+    // // If arm motors aren't spinning and there is a difference in position
+    // if ((!armMotors.isSpinning()) && (currentArmPosition != (leftArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0))
+    // {
+    //   currentArmPosition = (leftArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
+    //   std::string armPrint = "armMotors.spinTo(" + to_string(currentArmPosition) + ", vex::rotationUnits::deg, false);";
+    //   std::cout << armPrint << std::endl;
+
+    //   // Printing to SD Card if Attached
+    //   // if (Brain.SDcard.isInserted())
+    //   // {
+    //   //   FILE *autonProg = fopen("autonProg.txt", "a");
+    //   //   std::string armStr = "A" + to_string(currentArmPosition) + "\n";
+    //   //   fprintf(autonProg, armStr.c_str());
+    //   //   fclose(autonProg);
+    //   // }
+    // }
+
+    // // Intake Tracking
+
+    // // If intake motors aren't spinning and there is a difference in position
+    // if ((!intakeMotors.isSpinning()) && (currentIntakePosition != (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0))
+    // {
+    //   currentIntakePosition = (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0;
+    //   std::string intakePrint = "intakeMotors.spinTo(" + to_string(currentIntakePosition) + ", vex::rotationUnits::deg, false);";
+    //   std::cout << intakePrint << std::endl;
+
+    //   // Printing to SD Card if Attached
+    //   // if (Brain.SDcard.isInserted())
+    //   // {
+    //   //   FILE *autonProg = fopen("autonProg.txt", "a");
+    //   //   std::string intakeStr = "I" + to_string(currentIntakePosition) + "\n";
+    //   //   fprintf(autonProg, intakeStr.c_str());
+    //   //   fclose(autonProg);
+    //   // }
+    // }
+
+    // // Clamp Tracking
+
+    // // If there is a difference in position
+    // if (currentClampPosition != clamp.value())
+    // {
+    //   currentClampPosition = clamp.value();
+
+    //   std::string clampPositionStr = currentClampPosition ? "true" : "false";
+    //   std::string clampPrint = "clamp.set(" + clampPositionStr + ");";
+    //   std::cout << clampPrint << std::endl;
+
+    //   // Printing to SD Card if Attached
+    //   // if (Brain.SDcard.isInserted())
+    //   // {
+    //   //   FILE *autonProg = fopen("autonProg.txt", "a");
+    //   //   std::string clampStr = "C" + to_string(currentClampPosition) + "\n";
+    //   //   fprintf(autonProg, clampStr.c_str());
+    //   //   fclose(autonProg);
+    //   // }
+    // }
+    // wait(100, msec);
+  }
+}
+/*------------------------------------------------------------------------------------*/
+/*                                                                                    */
+/*                       VEX COMPETITION CONTROLLED FUNCTIONS                         */
+/*                                                                                    */
+/*  VEX competition controlled functions are those that are automatically called by   */
+/*  VEX tournament management systems and should not be manually called except by     */
+/*  the VEX competition controlled function main().                                    */
+/*  Includes:                                                                         */
+/*  - void pre_auton() - pre-game initializations, GUI loading, auton selection       */
+/*  - void autonomous() - update GUI, check motors, 15 sec autonomous robot movement  */
+/*  - void usercontrol() - update GUI, check motors, 1m45s loop of user-controlled    */
+/*    robot movement                                                                  */
+/*  - int main() - controls all other VEX controlled functions - DO NOT EDIT          */
+/*------------------------------------------------------------------------------------*/
+
+/**
+ * @brief VEX Competition Controlled Function: pre-game initializations, thread initializations, auton selection prompting
+ * @relates main()
+ * @author Leo Abubucker
+ * @date 09/10/2024
+ */
+void pre_auton()
+{
+  // MotorCollection Initialization
+  myMotorCollection.addMotor(leftArm, "LA");
+  myMotorCollection.addMotor(rightArm, "RA");
+  myMotorCollection.addMotor(leftBack, "LB");
+  myMotorCollection.addMotor(leftFront, "LF");
+  myMotorCollection.addMotor(rightBack, "RB");
+  myMotorCollection.addMotor(rightFront, "RF");
+  myMotorCollection.addMotor(rightIntake, "RI");
+  myMotorCollection.addMotor(leftIntake, "LI");
+
+  // Thread Initialization
+  thread autonTrackingThread = thread(autonomousTracking);
+  thread guiUpdatingThread = thread(drawGUI);
+  thread motorTrackingThread = thread(motorTracking);
+
+  // Auton Selection
+  autonSelector = 0;
+  autonSelection();
+
+  // Motor Initialization
+  allMotors.setMaxTorque(100, vex::percentUnits::pct);
+  allMotors.setVelocity(100, vex::percentUnits::pct);
+  armMotors.setVelocity(100, vex::velocityUnits::pct);
+  allMotors.setTimeout(5, vex::timeUnits::sec);
+  nonDriveMotors.setStopping(vex::brakeType::hold);
+  allMotors.resetPosition();
+}
+
+/**
+ * @brief VEX Competition Controlled Function: 15 seconds of autonomous robot movement
+ * @relates main()
+ * @authors Leo Abubucker, Jack Deise
+ * @date 09/10/2024
+ */
+void autonomous()
+{
+  if (autonSelector == 0)
+  {
+leftFront.spinToPosition(0.000000, degrees, false);
+leftBack.spinToPosition(0.000000, degrees, false);
+rightFront.spinToPosition(0.000000, degrees, false);
+rightBack.spinToPosition(0.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(16.000000, degrees, false);
+leftBack.spinToPosition(12.800000, degrees, false);
+rightFront.spinToPosition(10.800000, degrees, false);
+rightBack.spinToPosition(9.600000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(184.399994, degrees, false);
+leftBack.spinToPosition(181.600006, degrees, false);
+rightFront.spinToPosition(182.399994, degrees, false);
+rightBack.spinToPosition(182.399994, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(448.399994, degrees, false);
+leftBack.spinToPosition(442.399994, degrees, false);
+rightFront.spinToPosition(438.399994, degrees, false);
+rightBack.spinToPosition(436.799988, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(722.799988, degrees, false);
+leftBack.spinToPosition(719.200012, degrees, false);
+rightFront.spinToPosition(710.400024, degrees, false);
+rightBack.spinToPosition(713.599976, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1003.200012, degrees, false);
+leftBack.spinToPosition(997.200012, degrees, false);
+rightFront.spinToPosition(994.400024, degrees, false);
+rightBack.spinToPosition(996.799988, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1278.000000, degrees, false);
+leftBack.spinToPosition(1280.000000, degrees, false);
+rightFront.spinToPosition(1280.000000, degrees, false);
+rightBack.spinToPosition(1276.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1485.599976, degrees, false);
+leftBack.spinToPosition(1492.400024, degrees, false);
+rightFront.spinToPosition(1563.199951, degrees, false);
+rightBack.spinToPosition(1556.400024, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1382.800049, degrees, false);
+leftBack.spinToPosition(1388.800049, degrees, false);
+rightFront.spinToPosition(1792.800049, degrees, false);
+rightBack.spinToPosition(1791.199951, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1251.199951, degrees, false);
+leftBack.spinToPosition(1262.000000, degrees, false);
+rightFront.spinToPosition(1942.800049, degrees, false);
+rightBack.spinToPosition(1938.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1085.599976, degrees, false);
+leftBack.spinToPosition(1097.599976, degrees, false);
+rightFront.spinToPosition(2093.600098, degrees, false);
+rightBack.spinToPosition(2089.600098, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(928.000000, degrees, false);
+leftBack.spinToPosition(938.400024, degrees, false);
+rightFront.spinToPosition(2342.399902, degrees, false);
+rightBack.spinToPosition(2342.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(900.400024, degrees, false);
+leftBack.spinToPosition(900.000000, degrees, false);
+rightFront.spinToPosition(2455.199951, degrees, false);
+rightBack.spinToPosition(2456.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1098.800049, degrees, false);
+leftBack.spinToPosition(1097.599976, degrees, false);
+rightFront.spinToPosition(2628.000000, degrees, false);
+rightBack.spinToPosition(2626.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1360.800049, degrees, false);
+leftBack.spinToPosition(1356.000000, degrees, false);
+rightFront.spinToPosition(2854.000000, degrees, false);
+rightBack.spinToPosition(2852.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1616.400024, degrees, false);
+leftBack.spinToPosition(1614.400024, degrees, false);
+rightFront.spinToPosition(2770.800049, degrees, false);
+rightBack.spinToPosition(2771.600098, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1852.400024, degrees, false);
+leftBack.spinToPosition(1853.599976, degrees, false);
+rightFront.spinToPosition(2544.399902, degrees, false);
+rightBack.spinToPosition(2542.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(1973.199951, degrees, false);
+leftBack.spinToPosition(1976.400024, degrees, false);
+rightFront.spinToPosition(2486.399902, degrees, false);
+rightBack.spinToPosition(2482.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(2169.199951, degrees, false);
+leftBack.spinToPosition(2169.600098, degrees, false);
+rightFront.spinToPosition(2667.600098, degrees, false);
+rightBack.spinToPosition(2660.800049, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(2433.600098, degrees, false);
+leftBack.spinToPosition(2431.199951, degrees, false);
+rightFront.spinToPosition(2917.600098, degrees, false);
+rightBack.spinToPosition(2915.199951, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(2710.800049, degrees, false);
+leftBack.spinToPosition(2705.600098, degrees, false);
+rightFront.spinToPosition(3186.800049, degrees, false);
+rightBack.spinToPosition(3184.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(2978.399902, degrees, false);
+leftBack.spinToPosition(2978.399902, degrees, false);
+rightFront.spinToPosition(3278.399902, degrees, false);
+rightBack.spinToPosition(3278.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(3077.199951, degrees, false);
+leftBack.spinToPosition(3078.399902, degrees, false);
+rightFront.spinToPosition(3237.600098, degrees, false);
+rightBack.spinToPosition(3238.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(3190.800049, degrees, false);
+leftBack.spinToPosition(3189.600098, degrees, false);
+rightFront.spinToPosition(3346.399902, degrees, false);
+rightBack.spinToPosition(3343.199951, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(3415.199951, degrees, false);
+leftBack.spinToPosition(3415.600098, degrees, false);
+rightFront.spinToPosition(3572.800049, degrees, false);
+rightBack.spinToPosition(3569.199951, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(3667.600098, degrees, false);
+leftBack.spinToPosition(3667.199951, degrees, false);
+rightFront.spinToPosition(3648.000000, degrees, false);
+rightBack.spinToPosition(3649.199951, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(3905.600098, degrees, false);
+leftBack.spinToPosition(3905.600098, degrees, false);
+rightFront.spinToPosition(3651.199951, degrees, false);
+rightBack.spinToPosition(3648.800049, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(4150.399902, degrees, false);
+leftBack.spinToPosition(4148.399902, degrees, false);
+rightFront.spinToPosition(3841.600098, degrees, false);
+rightBack.spinToPosition(3839.600098, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(4224.000000, degrees, false);
+leftBack.spinToPosition(4250.799805, degrees, false);
+rightFront.spinToPosition(4100.399902, degrees, false);
+rightBack.spinToPosition(4097.600098, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(4231.600098, degrees, false);
+leftBack.spinToPosition(4249.600098, degrees, false);
+rightFront.spinToPosition(4361.600098, degrees, false);
+rightBack.spinToPosition(4363.200195, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(4256.399902, degrees, false);
+leftBack.spinToPosition(4263.600098, degrees, false);
+rightFront.spinToPosition(4496.399902, degrees, false);
+rightBack.spinToPosition(4496.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(4436.000000, degrees, false);
+leftBack.spinToPosition(4432.799805, degrees, false);
+rightFront.spinToPosition(4643.600098, degrees, false);
+rightBack.spinToPosition(4642.799805, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(4690.000000, degrees, false);
+leftBack.spinToPosition(4684.799805, degrees, false);
+rightFront.spinToPosition(4791.600098, degrees, false);
+rightBack.spinToPosition(4788.799805, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(4933.600098, degrees, false);
+leftBack.spinToPosition(4936.799805, degrees, false);
+rightFront.spinToPosition(4773.600098, degrees, false);
+rightBack.spinToPosition(4774.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(5022.799805, degrees, false);
+leftBack.spinToPosition(5033.600098, degrees, false);
+rightFront.spinToPosition(4760.799805, degrees, false);
+rightBack.spinToPosition(4761.600098, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(5134.799805, degrees, false);
+leftBack.spinToPosition(5138.399902, degrees, false);
+rightFront.spinToPosition(4724.399902, degrees, false);
+rightBack.spinToPosition(4724.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(5257.200195, degrees, false);
+leftBack.spinToPosition(5255.600098, degrees, false);
+rightFront.spinToPosition(4858.000000, degrees, false);
+rightBack.spinToPosition(4852.799805, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(5509.200195, degrees, false);
+leftBack.spinToPosition(5505.600098, degrees, false);
+rightFront.spinToPosition(5110.000000, degrees, false);
+rightBack.spinToPosition(5108.799805, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(5788.000000, degrees, false);
+leftBack.spinToPosition(5788.399902, degrees, false);
+rightFront.spinToPosition(5392.799805, degrees, false);
+rightBack.spinToPosition(5391.200195, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(6074.000000, degrees, false);
+leftBack.spinToPosition(6070.799805, degrees, false);
+rightFront.spinToPosition(5678.399902, degrees, false);
+rightBack.spinToPosition(5675.200195, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(6359.600098, degrees, false);
+leftBack.spinToPosition(6353.600098, degrees, false);
+rightFront.spinToPosition(5805.600098, degrees, false);
+rightBack.spinToPosition(5804.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(6523.200195, degrees, false);
+leftBack.spinToPosition(6533.600098, degrees, false);
+rightFront.spinToPosition(5810.799805, degrees, false);
+rightBack.spinToPosition(5809.600098, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(6668.799805, degrees, false);
+leftBack.spinToPosition(6663.200195, degrees, false);
+rightFront.spinToPosition(5904.000000, degrees, false);
+rightBack.spinToPosition(5900.799805, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(6919.200195, degrees, false);
+leftBack.spinToPosition(6916.399902, degrees, false);
+rightFront.spinToPosition(6148.000000, degrees, false);
+rightBack.spinToPosition(6149.600098, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(7199.200195, degrees, false);
+leftBack.spinToPosition(7192.799805, degrees, false);
+rightFront.spinToPosition(6354.000000, degrees, false);
+rightBack.spinToPosition(6352.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(7445.600098, degrees, false);
+leftBack.spinToPosition(7447.200195, degrees, false);
+rightFront.spinToPosition(6316.000000, degrees, false);
+rightBack.spinToPosition(6315.200195, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(7567.200195, degrees, false);
+leftBack.spinToPosition(7563.200195, degrees, false);
+rightFront.spinToPosition(6352.000000, degrees, false);
+rightBack.spinToPosition(6347.200195, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(7762.799805, degrees, false);
+leftBack.spinToPosition(7760.799805, degrees, false);
+rightFront.spinToPosition(6497.600098, degrees, false);
+rightBack.spinToPosition(6495.600098, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(8018.000000, degrees, false);
+leftBack.spinToPosition(8019.200195, degrees, false);
+rightFront.spinToPosition(6373.600098, degrees, false);
+rightBack.spinToPosition(6372.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(8245.200195, degrees, false);
+leftBack.spinToPosition(8244.799805, degrees, false);
+rightFront.spinToPosition(6167.600098, degrees, false);
+rightBack.spinToPosition(6167.200195, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(8353.599609, degrees, false);
+leftBack.spinToPosition(8348.000000, degrees, false);
+rightFront.spinToPosition(6173.200195, degrees, false);
+rightBack.spinToPosition(6168.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(8551.200195, degrees, false);
+leftBack.spinToPosition(8548.400391, degrees, false);
+rightFront.spinToPosition(6385.200195, degrees, false);
+rightBack.spinToPosition(6384.000000, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(8751.599609, degrees, false);
+leftBack.spinToPosition(8758.400391, degrees, false);
+rightFront.spinToPosition(6658.000000, degrees, false);
+rightBack.spinToPosition(6655.200195, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(8794.000000, degrees, false);
+leftBack.spinToPosition(8792.799805, degrees, false);
+rightFront.spinToPosition(6933.200195, degrees, false);
+rightBack.spinToPosition(6929.600098, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(8911.599609, degrees, false);
+leftBack.spinToPosition(8911.200195, degrees, false);
+rightFront.spinToPosition(7184.799805, degrees, false);
+rightBack.spinToPosition(7184.799805, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(9160.400391, degrees, false);
+leftBack.spinToPosition(9162.400391, degrees, false);
+rightFront.spinToPosition(7435.600098, degrees, false);
+rightBack.spinToPosition(7434.399902, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(9347.599609, degrees, false);
+leftBack.spinToPosition(9362.400391, degrees, false);
+rightFront.spinToPosition(7622.799805, degrees, false);
+rightBack.spinToPosition(7623.200195, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(9472.799805, degrees, false);
+leftBack.spinToPosition(9466.400391, degrees, false);
+rightFront.spinToPosition(7737.600098, degrees, false);
+rightBack.spinToPosition(7740.799805, degrees, false);
+wait(250, msec);
+leftFront.spinToPosition(9491.200195, degrees, false);
+leftBack.spinToPosition(9483.200195, degrees, false);
+rightFront.spinToPosition(7754.799805, degrees, false);
+rightBack.spinToPosition(7753.600098, degrees, false);
+wait(250, msec);
+
+    // leftFront.spinToPosition(0, vex::rotationUnits::deg, false);leftBack.spinToPosition(0, vex::rotationUnits::deg, false);rightFront.spinToPosition(0, vex::rotationUnits::deg, false);rightBack.spinToPosition(0, vex::rotationUnits::deg, false);leftFront.spinToPosition(3.6, vex::rotationUnits::deg, false);leftBack.spinToPosition(3.6, vex::rotationUnits::deg, false);rightFront.spinToPosition(0.6, vex::rotationUnits::deg, false);rightBack.spinToPosition(0.6, vex::rotationUnits::deg,false);leftBack.spinToPosition(360.8, vex::rotationUnits::deg, false);rightFront.spinToPosition(341.4, vex::rotationUnits::deg, false);rightBack.spinToPosition(341.4, vex::rotationUnits::deg, true);wait(25, msec);leftBack.spinToPosition(888.2, vex::rotationUnits::deg, false);rightFront.spinToPosition(866, vex::rotationUnits::deg, false);rightBack.spinToPosition(866, vex::rotationUnits::deg, true);wait(25, msec);leftFront.spinToPosition(910.6, vex::rotationUnits::deg, true);wait(25, msec);leftFront.spinToPosition(1223, vex::rotationUnits::deg, false);leftBack.spinToPosition(1223, vex::rotationUnits::deg, false);rightFront.spinToPosition(1478.2, vex::rotationUnits::deg, false);rightBack.spinToPosition(1924.8, vex::rotationUnits::deg, true);wait(25, msec);leftFront.spinToPosition(1681.8, vex::rotationUnits::deg, false);leftBack.spinToPosition(1681.8, vex::rotationUnits::deg, false);rightFront.spinToPosition(2282.4, vex::rotationUnits::deg, false);rightBack.spinToPosition(2282.4, vex::rotationUnits::deg, true);wait(25, msec);
+    //  if (Brain.SDcard.isInserted())
+    //  {
+    //    FILE *autonProg = fopen("autonProg.txt", "r");
+    //    if (autonProg != NULL)
+    //    {
+    //      const int LENGTH_OF_VALUE = 10;
+    //      const int NUMBER_OF_VALUES = 100;
+    //      char autonValues[NUMBER_OF_VALUES][LENGTH_OF_VALUE];
+    //      for (int i = 0; i < NUMBER_OF_VALUES; i++)
+    //      {
+    //        if (fgets(autonValues[i], LENGTH_OF_VALUE, autonProg))
+    //        {
+    //          puts(autonValues[i]);
+    //        }
+    //      }
+    //      fclose(autonProg);
+    //    }
+    //  }
+    //  Main Auton
+    //  armMotors.spinToPosition(505, vex::rotationUnits::deg, true);
+    //  drive(22.5, "fwd", 75);
+    //  rightIntake.spinToPosition(-225, vex::rotationUnits::deg, true);
+    //  armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
+    //  rightIntake.spinToPosition(-725, vex::rotationUnits::deg, true);
+    //  drive(1, "rev", 75);
+    //  drive(1, "fwd", 75);
+    //  drive(22.5, "rev", 75);
+    //  turn(90, "left", 50);
+    //  armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
+    //  armMotors.spinToPosition(130, vex::rotationUnits::deg, true);
+  }
+  else if (autonSelector == 1)
+  {
+    // Alternative Auton
+  }
+  else if (autonSelector == 2)
+  {
+    // NO AUTON - LEAVE BLANK
+  }
+}
+
+/**
+ * @brief VEX Competition Controlled Function: 1 minute 45 second loop of user-controlled robot movement
+ * @relates main()
+ * @author Leo Abubucker
+ * @date 09/10/2024
+ */
+void usercontrol()
+{
+  bool clampState = false;
+  bool clampLastState = false;
+
+  // thread timeTrackingThread = thread(timeTracking);
+
+  // User control code here, inside the loop
+  while (1)
+  {
     // Drive Controls
-    if (driveConfig == "rearWheel")
+    if (driveConfig == REAR_WHEEL)
     {
       leftBack.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
       rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
     }
-    else if (driveConfig == "frontWheel")
+    else if (driveConfig == FRONT_WHEEL)
     {
       leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
       rightFront.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
     }
-    else if (driveConfig == "RFLB")
+    else if (driveConfig == RFLB)
     {
       rightFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
       leftBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
     }
-    else if (driveConfig == "LFRB")
+    else if (driveConfig == LFRB)
     {
       leftFront.spin(vex::directionType::fwd, Controller1.Axis3.position(), vex::velocityUnits::pct);
       rightBack.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
@@ -989,43 +1535,23 @@ void usercontrol()
       rightFront.spin(vex::directionType::fwd, Controller1.Axis2.position(), vex::velocityUnits::pct);
     }
 
-    // Front Clamp Controls
-    if (Controller1.ButtonX.pressing() && !frontClampLastState)
+    // Clamp Controls
+    if (Controller1.ButtonX.pressing() && !clampLastState)
     {
-      frontClampState = !frontClampState;
-      frontClampLastState = true;
+      clampState = !clampState;
+      clampLastState = true;
     }
     else if (!Controller1.ButtonX.pressing())
     {
-      frontClampLastState = false;
+      clampLastState = false;
     }
-    if (frontClampState)
+    if (clampState)
     {
-      frontClamp.set(true);
-    }
-    else
-    {
-      frontClamp.set(false);
-    }
-
-    // Back Clamp Controls
-    if (Controller1.ButtonB.pressing() && !backClampLastState)
-    {
-      backClampState = !backClampState;
-      backClampLastState = true;
-    }
-    else if (!Controller1.ButtonB.pressing())
-    {
-      backClampLastState = false;
-    }
-
-    if (backClampState)
-    {
-      backClamp.set(true);
+      clamp.set(true);
     }
     else
     {
-      backClamp.set(false);
+      clamp.set(false);
     }
 
     // Intake Controls
