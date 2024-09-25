@@ -306,6 +306,9 @@ class AttendanceLog(customtkinter.CTkFrame):
         self.signOutBtn = customtkinter.CTkButton(self, text='Sign Out', font=generateFont('Roboto', 20), command=lambda:[loadFrame(SignOutWindow, self)])
         self.signOutBtn.place(relx=0.85, rely=0.24, relwidth=0.1, relheight=0.05)
 
+        self.signOutAllBtn = customtkinter.CTkButton(self, text='Sign Out All Users', font=generateFont('Roboto', 20), command=lambda:[self.signOut(user) for user in activeUsers])
+        self.signOutAllBtn.place (relx=0.85, rely=0.24, relwidth=0.1, relheight=0.05)
+
         self.tableFrame = customtkinter.CTkFrame(self)
         self.tableFrame.place(rely=0.3, relwidth=1, relheight=0.65)
 
@@ -935,12 +938,26 @@ def quitApp(container):
     confirmationTxt.place(rely=0.2, relwidth=1)
 
     #Runs the logAbsences function
-    yesBtn = customtkinter.CTkButton(master=popup, text="Yes", command=lambda:logAbsences(container))
+    yesBtn = customtkinter.CTkButton(master=popup, text="Yes", command=lambda:[signOutAllUsers(), logAbsences(container)])
     yesBtn.place(relx=0.25, rely=0.5)
 
     #Skips the logAbsences function, immediately exits the app
     noBtn = customtkinter.CTkButton(master=popup, text="No", command=lambda:forgetFrame(popup))
     noBtn.place(relx=0.5, rely=0.5)
+
+def signOutAllUsers():
+    conn = sqlite3.connect('main.sqlite')
+    cursor = conn.cursor()
+    currentDateTime = datetime.datetime.today().time()
+    currentDay = datetime.date.today()
+    for user in activeUsers:
+        activeUsers.remove(user)
+        #Edits any attendance database entry to add a time_out where the user is the passed in user, the day is the current day, and the time_out is NULL (i.e., this entry hasn't been previously signed out)    
+        cursor.execute('''
+          UPDATE attendance SET time_out=? WHERE user_id=? AND day=? AND time_out IS NULL            
+        ''', [str(currentDateTime), user.id, currentDay])
+        conn.commit()
+    conn.close()
 
 def logAbsences(container):
     """
@@ -958,7 +975,7 @@ def logAbsences(container):
     userIDRes = cursor.execute("SELECT id FROM users")
     userIDs = [id[0] for id in userIDRes.fetchall()]
     currentDay = datetime.date.today()
-    attendedUserIDRes = cursor.execute("SELECT user_id FROM attendance WHERE day=? AND time_out IS NOT NULL", [currentDay])
+    attendedUserIDRes = cursor.execute("SELECT user_id FROM attendance WHERE day=?", [currentDay])
     attendedUserIDs = [id[0] for id in attendedUserIDRes.fetchall()] #Logged in Users' IDs
 
     #Inserts pertinent info into Absences table for users not logged in if at least one user is logged in
