@@ -57,20 +57,20 @@ brain Brain;
 
 // VEX Initializations
 controller Controller1 = controller(primary);
-motor leftIntake = motor(PORT3, ratio18_1, true);
-motor rightIntake = motor(PORT8, ratio18_1, false);
-motor leftArm = motor(PORT7, ratio36_1, false);
-motor rightArm = motor(PORT18, ratio36_1, true);
-motor leftBack = motor(PORT14, ratio18_1, true);
-motor leftFront = motor(PORT6, ratio18_1, true);
-motor rightBack = motor(PORT10, ratio18_1, false);
-motor rightFront = motor(PORT1, ratio18_1, false);
-motor_group allMotors = motor_group(rightIntake, leftArm, rightArm, leftBack, leftFront, rightBack, rightFront, leftIntake);
+motor leftIntake = motor(PORT10, ratio18_1, true);
+motor rightIntake = motor(PORT2, ratio18_1, false);
+motor rightArm = motor(PORT1, ratio36_1, false);
+motor leftArm = motor(PORT9, ratio36_1, true);
+motor leftBack = motor(PORT11, ratio18_1, true);
+motor leftFront = motor(PORT15, ratio18_1, true);
+motor rightBack = motor(PORT13, ratio18_1, false);
+motor rightFront = motor(PORT14, ratio18_1, false);
+motor_group allMotors = motor_group(rightIntake, rightArm, leftArm, leftBack, leftFront, rightBack, rightFront, leftIntake);
 motor_group driveMotors = motor_group(leftBack, leftFront, rightBack, rightFront);
 motor_group leftDriveMotors = motor_group(leftFront, leftBack);
 motor_group rightDriveMotors = motor_group(rightFront, rightBack);
-motor_group nonDriveMotors = motor_group(rightIntake, leftArm, rightArm);
-motor_group armMotors = motor_group(leftArm, rightArm);
+motor_group nonDriveMotors = motor_group(rightIntake, rightArm, leftArm);
+motor_group armMotors = motor_group(rightArm, leftArm);
 motor_group intakeMotors = motor_group(leftIntake, rightIntake);
 triport myTriport = triport(Brain.ThreeWirePort);
 pneumatics clamp = pneumatics(myTriport.A);
@@ -154,7 +154,7 @@ bool waitingForUserInput = false;
  * @param value value to be converted to a std::string
  * @returns value converted to a std::string
  * @author James Pearman
- * @cite https://www.vexforum.com/t/std-to-string-not-working-in-vc-and-vcs/62962/7
+ * @cite https://www.vexforum.com/t/std-tostring-not-working-in-vc-and-vcs/62962/7
  */
 template <typename T>
 std::string to_string(T value)
@@ -370,7 +370,7 @@ public:
       {
         motorType = "5.5W";
       }
-      returnedList.push_back({motorNamesList[i], ": ", motorCartridgeType, ", ", motorType, ", ", to_string(motorList[i].temperature(vex::temperatureUnits::fahrenheit)), "F", ", ", to_string(motorList[i].position(vex::rotationUnits::deg)), "deg"});
+      returnedList.push_back({motorNamesList[i], ": ", motorCartridgeType, ", ", motorType, ", ", to_string(motorList[i].temperature(vex::temperatureUnits::celsius)), "C", ", ", to_string(motorList[i].position(vex::rotationUnits::deg)), "deg"});
     }
     return returnedList;
   }
@@ -529,11 +529,13 @@ vex::color getColorFromValue(int value, Keywords keyword)
 {
   if (keyword == MOTOR_TEMPERATURE)
   {
-    if (value < 104)
+    // Motors will cut their maxium current to 50% at 55 degrees Celsius, to 25% at 60 degrees Celsius,
+    // to 12.5% at 65 degrees Celsius, and turn off at 70 degrees celsius
+    if (value < 55)
     {
       return color::green;
     }
-    else if (value < 122)
+    else if (value < 70)
     {
       return color::orange;
     }
@@ -873,7 +875,7 @@ void autonSelection()
         }
 
         wait(200, msec);
-        drawGUI();
+        // drawGUI();
       }
     }
 
@@ -888,7 +890,7 @@ void autonSelection()
       {
         autonSelector = 0;
       }
-      drawGUI();
+      // drawGUI();
     }
 
     // Checks if the user presses the physical auton confirmation bumper
@@ -899,7 +901,7 @@ void autonSelection()
     wait(20, msec);
   }
 
-  drawGUI();
+  // drawGUI();
 }
 
 /**
@@ -968,7 +970,7 @@ void autonomousTracking()
   // // Drivetrain Tracking
   // double currentLeftDrivePosition = (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0;
   // double currentRightDrivePosition = (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0;
-  // double currentArmPosition = (leftArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
+  // double currentArmPosition = (rightArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
   // double currentIntakePosition = (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0;
   // bool currentClampPosition = clamp.value(); // True (1) is extended, False (0) is retracted
   float lfPos;
@@ -1033,9 +1035,9 @@ void autonomousTracking()
     // Arm Tracking
 
     // // If arm motors aren't spinning and there is a difference in position
-    // if ((!armMotors.isSpinning()) && (currentArmPosition != (leftArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0))
+    // if ((!armMotors.isSpinning()) && (currentArmPosition != (rightArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0))
     // {
-    //   currentArmPosition = (leftArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
+    //   currentArmPosition = (rightArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
     //   std::string armPrint = "armMotors.spinTo(" + to_string(currentArmPosition) + ", vex::rotationUnits::deg, false);";
     //   std::cout << armPrint << std::endl;
 
@@ -1115,8 +1117,8 @@ void autonomousTracking()
 void pre_auton()
 {
   // MotorCollection Initialization
-  myMotorCollection.addMotor(leftArm, "LA");
-  myMotorCollection.addMotor(rightArm, "RA");
+  myMotorCollection.addMotor(rightArm, "LA");
+  myMotorCollection.addMotor(leftArm, "RA");
   myMotorCollection.addMotor(leftBack, "LB");
   myMotorCollection.addMotor(leftFront, "LF");
   myMotorCollection.addMotor(rightBack, "RB");
@@ -1125,21 +1127,21 @@ void pre_auton()
   myMotorCollection.addMotor(leftIntake, "LI");
 
   // Thread Initialization
-  thread autonTrackingThread = thread(autonomousTracking);
-  thread guiUpdatingThread = thread(drawGUI);
-  thread motorTrackingThread = thread(motorTracking);
+
 
   // Auton Selection
-  autonSelector = 0;
-  autonSelection();
+  // autonSelector = 0; BAD
+  // autonSelection(); BAD
 
   // Motor Initialization
   allMotors.setMaxTorque(100, vex::percentUnits::pct);
   allMotors.setVelocity(100, vex::percentUnits::pct);
-  armMotors.setVelocity(100, vex::velocityUnits::pct);
   allMotors.setTimeout(5, vex::timeUnits::sec);
   nonDriveMotors.setStopping(vex::brakeType::hold);
   allMotors.resetPosition();
+  thread guiUpdatingThread = thread(drawGUI);
+  thread motorTrackingThread = thread(motorTracking);
+  // thread autonTrackingThread = thread(autonomousTracking); BAD
 }
 
 /**
@@ -1152,333 +1154,10 @@ void autonomous()
 {
   if (autonSelector == 0)
   {
-leftFront.spinToPosition(0.000000, degrees, false);
-leftBack.spinToPosition(0.000000, degrees, false);
-rightFront.spinToPosition(0.000000, degrees, false);
-rightBack.spinToPosition(0.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(16.000000, degrees, false);
-leftBack.spinToPosition(12.800000, degrees, false);
-rightFront.spinToPosition(10.800000, degrees, false);
-rightBack.spinToPosition(9.600000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(184.399994, degrees, false);
-leftBack.spinToPosition(181.600006, degrees, false);
-rightFront.spinToPosition(182.399994, degrees, false);
-rightBack.spinToPosition(182.399994, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(448.399994, degrees, false);
-leftBack.spinToPosition(442.399994, degrees, false);
-rightFront.spinToPosition(438.399994, degrees, false);
-rightBack.spinToPosition(436.799988, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(722.799988, degrees, false);
-leftBack.spinToPosition(719.200012, degrees, false);
-rightFront.spinToPosition(710.400024, degrees, false);
-rightBack.spinToPosition(713.599976, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1003.200012, degrees, false);
-leftBack.spinToPosition(997.200012, degrees, false);
-rightFront.spinToPosition(994.400024, degrees, false);
-rightBack.spinToPosition(996.799988, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1278.000000, degrees, false);
-leftBack.spinToPosition(1280.000000, degrees, false);
-rightFront.spinToPosition(1280.000000, degrees, false);
-rightBack.spinToPosition(1276.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1485.599976, degrees, false);
-leftBack.spinToPosition(1492.400024, degrees, false);
-rightFront.spinToPosition(1563.199951, degrees, false);
-rightBack.spinToPosition(1556.400024, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1382.800049, degrees, false);
-leftBack.spinToPosition(1388.800049, degrees, false);
-rightFront.spinToPosition(1792.800049, degrees, false);
-rightBack.spinToPosition(1791.199951, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1251.199951, degrees, false);
-leftBack.spinToPosition(1262.000000, degrees, false);
-rightFront.spinToPosition(1942.800049, degrees, false);
-rightBack.spinToPosition(1938.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1085.599976, degrees, false);
-leftBack.spinToPosition(1097.599976, degrees, false);
-rightFront.spinToPosition(2093.600098, degrees, false);
-rightBack.spinToPosition(2089.600098, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(928.000000, degrees, false);
-leftBack.spinToPosition(938.400024, degrees, false);
-rightFront.spinToPosition(2342.399902, degrees, false);
-rightBack.spinToPosition(2342.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(900.400024, degrees, false);
-leftBack.spinToPosition(900.000000, degrees, false);
-rightFront.spinToPosition(2455.199951, degrees, false);
-rightBack.spinToPosition(2456.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1098.800049, degrees, false);
-leftBack.spinToPosition(1097.599976, degrees, false);
-rightFront.spinToPosition(2628.000000, degrees, false);
-rightBack.spinToPosition(2626.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1360.800049, degrees, false);
-leftBack.spinToPosition(1356.000000, degrees, false);
-rightFront.spinToPosition(2854.000000, degrees, false);
-rightBack.spinToPosition(2852.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1616.400024, degrees, false);
-leftBack.spinToPosition(1614.400024, degrees, false);
-rightFront.spinToPosition(2770.800049, degrees, false);
-rightBack.spinToPosition(2771.600098, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1852.400024, degrees, false);
-leftBack.spinToPosition(1853.599976, degrees, false);
-rightFront.spinToPosition(2544.399902, degrees, false);
-rightBack.spinToPosition(2542.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(1973.199951, degrees, false);
-leftBack.spinToPosition(1976.400024, degrees, false);
-rightFront.spinToPosition(2486.399902, degrees, false);
-rightBack.spinToPosition(2482.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(2169.199951, degrees, false);
-leftBack.spinToPosition(2169.600098, degrees, false);
-rightFront.spinToPosition(2667.600098, degrees, false);
-rightBack.spinToPosition(2660.800049, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(2433.600098, degrees, false);
-leftBack.spinToPosition(2431.199951, degrees, false);
-rightFront.spinToPosition(2917.600098, degrees, false);
-rightBack.spinToPosition(2915.199951, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(2710.800049, degrees, false);
-leftBack.spinToPosition(2705.600098, degrees, false);
-rightFront.spinToPosition(3186.800049, degrees, false);
-rightBack.spinToPosition(3184.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(2978.399902, degrees, false);
-leftBack.spinToPosition(2978.399902, degrees, false);
-rightFront.spinToPosition(3278.399902, degrees, false);
-rightBack.spinToPosition(3278.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(3077.199951, degrees, false);
-leftBack.spinToPosition(3078.399902, degrees, false);
-rightFront.spinToPosition(3237.600098, degrees, false);
-rightBack.spinToPosition(3238.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(3190.800049, degrees, false);
-leftBack.spinToPosition(3189.600098, degrees, false);
-rightFront.spinToPosition(3346.399902, degrees, false);
-rightBack.spinToPosition(3343.199951, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(3415.199951, degrees, false);
-leftBack.spinToPosition(3415.600098, degrees, false);
-rightFront.spinToPosition(3572.800049, degrees, false);
-rightBack.spinToPosition(3569.199951, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(3667.600098, degrees, false);
-leftBack.spinToPosition(3667.199951, degrees, false);
-rightFront.spinToPosition(3648.000000, degrees, false);
-rightBack.spinToPosition(3649.199951, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(3905.600098, degrees, false);
-leftBack.spinToPosition(3905.600098, degrees, false);
-rightFront.spinToPosition(3651.199951, degrees, false);
-rightBack.spinToPosition(3648.800049, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(4150.399902, degrees, false);
-leftBack.spinToPosition(4148.399902, degrees, false);
-rightFront.spinToPosition(3841.600098, degrees, false);
-rightBack.spinToPosition(3839.600098, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(4224.000000, degrees, false);
-leftBack.spinToPosition(4250.799805, degrees, false);
-rightFront.spinToPosition(4100.399902, degrees, false);
-rightBack.spinToPosition(4097.600098, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(4231.600098, degrees, false);
-leftBack.spinToPosition(4249.600098, degrees, false);
-rightFront.spinToPosition(4361.600098, degrees, false);
-rightBack.spinToPosition(4363.200195, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(4256.399902, degrees, false);
-leftBack.spinToPosition(4263.600098, degrees, false);
-rightFront.spinToPosition(4496.399902, degrees, false);
-rightBack.spinToPosition(4496.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(4436.000000, degrees, false);
-leftBack.spinToPosition(4432.799805, degrees, false);
-rightFront.spinToPosition(4643.600098, degrees, false);
-rightBack.spinToPosition(4642.799805, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(4690.000000, degrees, false);
-leftBack.spinToPosition(4684.799805, degrees, false);
-rightFront.spinToPosition(4791.600098, degrees, false);
-rightBack.spinToPosition(4788.799805, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(4933.600098, degrees, false);
-leftBack.spinToPosition(4936.799805, degrees, false);
-rightFront.spinToPosition(4773.600098, degrees, false);
-rightBack.spinToPosition(4774.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(5022.799805, degrees, false);
-leftBack.spinToPosition(5033.600098, degrees, false);
-rightFront.spinToPosition(4760.799805, degrees, false);
-rightBack.spinToPosition(4761.600098, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(5134.799805, degrees, false);
-leftBack.spinToPosition(5138.399902, degrees, false);
-rightFront.spinToPosition(4724.399902, degrees, false);
-rightBack.spinToPosition(4724.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(5257.200195, degrees, false);
-leftBack.spinToPosition(5255.600098, degrees, false);
-rightFront.spinToPosition(4858.000000, degrees, false);
-rightBack.spinToPosition(4852.799805, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(5509.200195, degrees, false);
-leftBack.spinToPosition(5505.600098, degrees, false);
-rightFront.spinToPosition(5110.000000, degrees, false);
-rightBack.spinToPosition(5108.799805, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(5788.000000, degrees, false);
-leftBack.spinToPosition(5788.399902, degrees, false);
-rightFront.spinToPosition(5392.799805, degrees, false);
-rightBack.spinToPosition(5391.200195, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(6074.000000, degrees, false);
-leftBack.spinToPosition(6070.799805, degrees, false);
-rightFront.spinToPosition(5678.399902, degrees, false);
-rightBack.spinToPosition(5675.200195, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(6359.600098, degrees, false);
-leftBack.spinToPosition(6353.600098, degrees, false);
-rightFront.spinToPosition(5805.600098, degrees, false);
-rightBack.spinToPosition(5804.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(6523.200195, degrees, false);
-leftBack.spinToPosition(6533.600098, degrees, false);
-rightFront.spinToPosition(5810.799805, degrees, false);
-rightBack.spinToPosition(5809.600098, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(6668.799805, degrees, false);
-leftBack.spinToPosition(6663.200195, degrees, false);
-rightFront.spinToPosition(5904.000000, degrees, false);
-rightBack.spinToPosition(5900.799805, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(6919.200195, degrees, false);
-leftBack.spinToPosition(6916.399902, degrees, false);
-rightFront.spinToPosition(6148.000000, degrees, false);
-rightBack.spinToPosition(6149.600098, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(7199.200195, degrees, false);
-leftBack.spinToPosition(7192.799805, degrees, false);
-rightFront.spinToPosition(6354.000000, degrees, false);
-rightBack.spinToPosition(6352.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(7445.600098, degrees, false);
-leftBack.spinToPosition(7447.200195, degrees, false);
-rightFront.spinToPosition(6316.000000, degrees, false);
-rightBack.spinToPosition(6315.200195, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(7567.200195, degrees, false);
-leftBack.spinToPosition(7563.200195, degrees, false);
-rightFront.spinToPosition(6352.000000, degrees, false);
-rightBack.spinToPosition(6347.200195, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(7762.799805, degrees, false);
-leftBack.spinToPosition(7760.799805, degrees, false);
-rightFront.spinToPosition(6497.600098, degrees, false);
-rightBack.spinToPosition(6495.600098, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(8018.000000, degrees, false);
-leftBack.spinToPosition(8019.200195, degrees, false);
-rightFront.spinToPosition(6373.600098, degrees, false);
-rightBack.spinToPosition(6372.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(8245.200195, degrees, false);
-leftBack.spinToPosition(8244.799805, degrees, false);
-rightFront.spinToPosition(6167.600098, degrees, false);
-rightBack.spinToPosition(6167.200195, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(8353.599609, degrees, false);
-leftBack.spinToPosition(8348.000000, degrees, false);
-rightFront.spinToPosition(6173.200195, degrees, false);
-rightBack.spinToPosition(6168.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(8551.200195, degrees, false);
-leftBack.spinToPosition(8548.400391, degrees, false);
-rightFront.spinToPosition(6385.200195, degrees, false);
-rightBack.spinToPosition(6384.000000, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(8751.599609, degrees, false);
-leftBack.spinToPosition(8758.400391, degrees, false);
-rightFront.spinToPosition(6658.000000, degrees, false);
-rightBack.spinToPosition(6655.200195, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(8794.000000, degrees, false);
-leftBack.spinToPosition(8792.799805, degrees, false);
-rightFront.spinToPosition(6933.200195, degrees, false);
-rightBack.spinToPosition(6929.600098, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(8911.599609, degrees, false);
-leftBack.spinToPosition(8911.200195, degrees, false);
-rightFront.spinToPosition(7184.799805, degrees, false);
-rightBack.spinToPosition(7184.799805, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(9160.400391, degrees, false);
-leftBack.spinToPosition(9162.400391, degrees, false);
-rightFront.spinToPosition(7435.600098, degrees, false);
-rightBack.spinToPosition(7434.399902, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(9347.599609, degrees, false);
-leftBack.spinToPosition(9362.400391, degrees, false);
-rightFront.spinToPosition(7622.799805, degrees, false);
-rightBack.spinToPosition(7623.200195, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(9472.799805, degrees, false);
-leftBack.spinToPosition(9466.400391, degrees, false);
-rightFront.spinToPosition(7737.600098, degrees, false);
-rightBack.spinToPosition(7740.799805, degrees, false);
-wait(250, msec);
-leftFront.spinToPosition(9491.200195, degrees, false);
-leftBack.spinToPosition(9483.200195, degrees, false);
-rightFront.spinToPosition(7754.799805, degrees, false);
-rightBack.spinToPosition(7753.600098, degrees, false);
-wait(250, msec);
-
-    // leftFront.spinToPosition(0, vex::rotationUnits::deg, false);leftBack.spinToPosition(0, vex::rotationUnits::deg, false);rightFront.spinToPosition(0, vex::rotationUnits::deg, false);rightBack.spinToPosition(0, vex::rotationUnits::deg, false);leftFront.spinToPosition(3.6, vex::rotationUnits::deg, false);leftBack.spinToPosition(3.6, vex::rotationUnits::deg, false);rightFront.spinToPosition(0.6, vex::rotationUnits::deg, false);rightBack.spinToPosition(0.6, vex::rotationUnits::deg,false);leftBack.spinToPosition(360.8, vex::rotationUnits::deg, false);rightFront.spinToPosition(341.4, vex::rotationUnits::deg, false);rightBack.spinToPosition(341.4, vex::rotationUnits::deg, true);wait(25, msec);leftBack.spinToPosition(888.2, vex::rotationUnits::deg, false);rightFront.spinToPosition(866, vex::rotationUnits::deg, false);rightBack.spinToPosition(866, vex::rotationUnits::deg, true);wait(25, msec);leftFront.spinToPosition(910.6, vex::rotationUnits::deg, true);wait(25, msec);leftFront.spinToPosition(1223, vex::rotationUnits::deg, false);leftBack.spinToPosition(1223, vex::rotationUnits::deg, false);rightFront.spinToPosition(1478.2, vex::rotationUnits::deg, false);rightBack.spinToPosition(1924.8, vex::rotationUnits::deg, true);wait(25, msec);leftFront.spinToPosition(1681.8, vex::rotationUnits::deg, false);leftBack.spinToPosition(1681.8, vex::rotationUnits::deg, false);rightFront.spinToPosition(2282.4, vex::rotationUnits::deg, false);rightBack.spinToPosition(2282.4, vex::rotationUnits::deg, true);wait(25, msec);
-    //  if (Brain.SDcard.isInserted())
-    //  {
-    //    FILE *autonProg = fopen("autonProg.txt", "r");
-    //    if (autonProg != NULL)
-    //    {
-    //      const int LENGTH_OF_VALUE = 10;
-    //      const int NUMBER_OF_VALUES = 100;
-    //      char autonValues[NUMBER_OF_VALUES][LENGTH_OF_VALUE];
-    //      for (int i = 0; i < NUMBER_OF_VALUES; i++)
-    //      {
-    //        if (fgets(autonValues[i], LENGTH_OF_VALUE, autonProg))
-    //        {
-    //          puts(autonValues[i]);
-    //        }
-    //      }
-    //      fclose(autonProg);
-    //    }
-    //  }
-    //  Main Auton
-    //  armMotors.spinToPosition(505, vex::rotationUnits::deg, true);
-    //  drive(22.5, "fwd", 75);
-    //  rightIntake.spinToPosition(-225, vex::rotationUnits::deg, true);
-    //  armMotors.spinToPosition(350, vex::rotationUnits::deg, true);
-    //  rightIntake.spinToPosition(-725, vex::rotationUnits::deg, true);
-    //  drive(1, "rev", 75);
-    //  drive(1, "fwd", 75);
-    //  drive(22.5, "rev", 75);
-    //  turn(90, "left", 50);
-    //  armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
-    //  armMotors.spinToPosition(130, vex::rotationUnits::deg, true);
+    armMotors.spinToPosition(460, vex::rotationUnits::deg, true);
+    intakeMotors.spinToPosition(245, vex::rotationUnits::deg, 22, vex::velocityUnits::pct, true);
+    drive(1.5, FORWARD, 20);
+    armMotors.spinToPosition(300, vex::rotationUnits::deg, true);
   }
   else if (autonSelector == 1)
   {
