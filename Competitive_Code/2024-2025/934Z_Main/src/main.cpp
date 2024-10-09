@@ -1130,13 +1130,14 @@ void pre_auton()
 
 
   // Auton Selection
-  // autonSelector = 0; BAD
+  autonSelector = 0;
   // autonSelection(); BAD
 
   // Motor Initialization
   allMotors.setMaxTorque(100, vex::percentUnits::pct);
   allMotors.setVelocity(100, vex::percentUnits::pct);
-  allMotors.setTimeout(5, vex::timeUnits::sec);
+  // allMotors.setTimeout(5, vex::timeUnits::sec);
+  armMotors.setTimeout(5, vex::timeUnits::sec);
   nonDriveMotors.setStopping(vex::brakeType::hold);
   allMotors.resetPosition();
   thread guiUpdatingThread = thread(drawGUI);
@@ -1154,10 +1155,19 @@ void autonomous()
 {
   if (autonSelector == 0)
   {
-    armMotors.spinToPosition(460, vex::rotationUnits::deg, true);
-    intakeMotors.spinToPosition(245, vex::rotationUnits::deg, 22, vex::velocityUnits::pct, true);
-    drive(1.5, FORWARD, 20);
-    armMotors.spinToPosition(300, vex::rotationUnits::deg, true);
+    // drive(5, FORWARD, 20);
+    // intakeMotors.spinFor(500, vex::rotationUnits::deg, 20, vex::velocityUnits::pct, true);
+    armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
+    drive(9, FORWARD, 20);
+    intakeMotors.spinFor(230, vex::rotationUnits::deg, 40, vex::velocityUnits::pct, true);
+    armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
+    drive(1, FORWARD, 20);
+    armMotors.spinToPosition(380, vex::rotationUnits::deg, 100, vex::velocityUnits::pct, true);
+    drive(4, REVERSE, 20);
+    drive(4, FORWARD, 100);
+    drive(10, REVERSE, 20);
+    turn(120, RIGHT, 50);
+    drive(30, FORWARD, 100);
   }
   else if (autonSelector == 1)
   {
