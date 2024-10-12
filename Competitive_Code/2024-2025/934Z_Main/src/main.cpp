@@ -46,6 +46,11 @@ using namespace vex;
 /*      selects to run.                                                               */
 /*  - std::map<std::string, int> autonSelectorFrame - map representing the            */
 /*      coordinates of the autonomous selector GUI button on the brain.               */
+/*  - enum DriveConfigurations{} - enums representing the 4 drive configs             */
+/*  - DriveConfigurations driveConfig - global instance of DriveConfigurations        */
+/*  - enum Keywords{} - enums representing the 7 keywords                             */
+/*  - enum GameStates{} - enums representing the 5 game states                        */
+/*  - enum MovementDirections{} - enums representing the 4 movement directions        */
 /*  Non-VEX Initializations:                                                          */
 /*  - bool waitingForUserInput = false - boolean representing whether the user has    */
 /*      provided input confirming the autonomous program to be run.                   */
@@ -129,14 +134,15 @@ bool waitingForUserInput = false;
 /*    function                                                                        */
 /*  - void drive(int inches, std::string direction, int velocity) - Autonomous drive  */
 /*    function                                                                        */
-/*  - PID control - NOT FUNCTIONAL, LEAVE COMMENTED OUT                               */
 /*  - Motor Collection Class - Provides additional functionality for VEX V5 motors    */
-/*  - std::string getCompetitionStatus() - gets the current competition state         */
-/*  - vex::color getColorFromValue(std::string value, std::string keyword) - returns  */
+/*  - GameStates getCompetitionStatus() - gets the current competition state          */
+/*  - vex::color getColorFromValue(std::string value, Keywords keyword) - returns     */
 /*    a color based on the given value and keyword                                    */
-/*  - vex::color getColorFromValue(bool value, std::string keyword) - returns         */
+/*  - vex::color getColorFromValue(bool value, Keywords keyword) - returns            */
 /*    a color based on the given value and keyword                                    */
-/*  - vex::color getColorFromValue(int value, std::string keyword) - returns          */
+/*  - vex::color getColorFromValue(int value, Keywords keyword) - returns             */
+/*    a color based on the given value and keyword                                    */
+/*  - vex::color getColorFromValue(GameStates value, Keywords keyword) - returns      */
 /*    a color based on the given value and keyword                                    */
 /*  - void drawControlsFrame() - draws the control frame                              */
 /*  - void drawAutonSelectorFrame() - draws the autononomous selection frame          */
@@ -144,8 +150,11 @@ bool waitingForUserInput = false;
 /*  - void drawMotorDebugFrame() - draws the motor debug frame                        */
 /*  - void drawBatteryInfoFrame() - draws the battery info frame                      */
 /*  - void drawControllerInfoFrame() - draws the control frame                        */
-/*  - void drawGUI() - calls the six draw functions above                             */
+/*  - void drawGUI() - thread function that calls the six draw functions above        */
 /*  - void autonSelection() - Autonomous program selection function                   */
+/*  - void motorTracking() - thread function that routinely check status of motors    */
+/*  - void timeTracking() - thread function that alerts controller w/ time updates    */
+/*  - void autonTracking() - thread function tracks and interprets motor positions    */
 /*------------------------------------------------------------------------------------*/
 
 /**
@@ -339,7 +348,7 @@ public:
    * @relates drawMotorDebugFrame()
    * @returns 2D vector where each value is [name: cartridge, type, temperatureF, positiondeg]
    * @author Leo Abubucker
-   * @date 06/14/2024
+   * @date 10/03/2024
    */
   std::vector<std::vector<std::string>> returnValues()
   {
@@ -523,7 +532,7 @@ vex::color getColorFromValue(bool value, Keywords keyword)
  * @param keyword std::string keyword that determines which conditions value is checked. Valid keywords are "gameState" or "motorCartridge"
  * @returns vex::color determined by value. Returns color::white if no value, keyword pair matches.
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 10/03/2024
  */
 vex::color getColorFromValue(int value, Keywords keyword)
 {
@@ -599,6 +608,7 @@ vex::color getColorFromValue(GameStates value, Keywords keyword)
 
   return color::white;
 }
+
 /**
  * @brief draws the GUI controls frame
  * @relates drawGUI()
@@ -816,10 +826,10 @@ void drawControllerInfoFrame()
 }
 
 /**
- * @brief calls the six individual drawing functions to draw the entire GUI
+ * @brief Threaded function that calls the six individual drawing functions to draw the entire GUI every 5 seconds
  * @relates autonSelection(), pre_auton(), autonomous(), usercontrol()
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 09/19/2024
  */
 void drawGUI()
 {
@@ -839,7 +849,7 @@ void drawGUI()
  * @brief manages user input for the auton selector
  * @relates pre_auton()
  * @author Leo Abubucker
- * @date 07/21/2024
+ * @date 10/11/2024
  */
 void autonSelection()
 {
@@ -873,9 +883,7 @@ void autonSelection()
         {
           autonSelector = 0;
         }
-
         wait(200, msec);
-        // drawGUI();
       }
     }
 
@@ -890,7 +898,6 @@ void autonSelection()
       {
         autonSelector = 0;
       }
-      // drawGUI();
     }
 
     // Checks if the user presses the physical auton confirmation bumper
@@ -900,15 +907,13 @@ void autonSelection()
     }
     wait(20, msec);
   }
-
-  // drawGUI();
 }
 
 /**
- * @brief
- * @relates
+ * @brief Thread function that checks the motor statuses every 5 seconds
+ * @relates pre_auton
  * @author Leo Abubucker
- * @date
+ * @date 09/19/2024
  */
 void motorTracking()
 {
@@ -921,10 +926,10 @@ void motorTracking()
 }
 
 /**
- * @brief
- * @relates
+ * @brief Thread function that provides time updates to the controller at set intervals during user control
+ * @relates usercontrol()
  * @author Leo Abubucker
- * @date
+ * @date 09/19/2024
  */
 void timeTracking()
 {
@@ -958,141 +963,112 @@ void timeTracking()
 }
 
 /**
- * @brief
- * @relates
+ * @brief Thread function that records and interprets changes in motor positions and prints code that will replicate said movement to console
+ * @relates pre_auton()
  * @author Leo Abubucker
- * @date
+ * @date 10/11/2024
+ * @bug NONFUNCTIONAL - VEX V5 System can not handle the quantity of output to console and function doesn't properly interpret positions
  */
 void autonomousTracking()
 {
-  // (abs(Controller1.Axis3.value()) < AXIS_DEVIATION) && (abs(Controller1.Axis2.value()) < AXIS_DEVIATION) &&
-  // const int AXIS_DEVIATION = 5;
-  // // Drivetrain Tracking
-  // double currentLeftDrivePosition = (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0;
-  // double currentRightDrivePosition = (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0;
-  // double currentArmPosition = (rightArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
-  // double currentIntakePosition = (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0;
-  // bool currentClampPosition = clamp.value(); // True (1) is extended, False (0) is retracted
-  float lfPos;
-  float lbPos;
-  float rfPos;
-  float rbPos;
+  const int AXIS_DEVIATION = 5;
+  double currentLeftDrivePosition = (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0;
+  double currentRightDrivePosition = (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0;
+  double currentArmPosition = (rightArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
+  double currentIntakePosition = (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0;
+  bool currentClampPosition = clamp.value(); // True (1) is extended, False (0) is retracted
+
   while (true)
   {
 
     // If drive motors aren't spinning and there is a difference in either position
-    // if (((currentLeftDrivePosition != (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0) || (currentRightDrivePosition != (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0)))
-    // {
-    // currentLeftDrivePosition = (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0;
-    // currentRightDrivePosition = (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0;
-    // float lfPosition = leftFront.position(vex::rotationUnits::deg);
-    // float lbPosition = leftBack.position(vex::rotationUnits::deg);
-    // float rfPosition = rightFront.position(vex::rotationUnits::deg);
-    // float rbPosition = rightBack.position(vex::rotationUnits::deg);
+    if ((abs(Controller1.Axis3.value()) < AXIS_DEVIATION) && (abs(Controller1.Axis2.value()) < AXIS_DEVIATION) && ((currentLeftDrivePosition != (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0) || (currentRightDrivePosition != (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0)))
+    {
+      currentLeftDrivePosition = (leftFront.position(vex::rotationUnits::deg) + leftBack.position(vex::rotationUnits::deg)) / 2.0;
+      currentRightDrivePosition = (rightFront.position(vex::rotationUnits::deg) + rightBack.position(vex::rotationUnits::deg)) / 2.0;
+      std::string lFPrint = "leftFront.spinToPosition(" + to_string(currentLeftDrivePosition) + ", vex::rotationUnits::deg, false);";
+      std::string lBPrint = "leftBack.spinToPosition(" + to_string(currentLeftDrivePosition) + ", vex::rotationUnits::deg, false);";
+      std::string rFPrint = "rightFront.spinToPosition(" + to_string(currentRightDrivePosition) + ", vex::rotationUnits::deg, false);";
+      std::string rBPrint = "rightBack.spinToPosition(" + to_string(currentRightDrivePosition) + ", vex::rotationUnits::deg, true);";
+      std::cout << lFPrint << std::endl;
+      std::cout << lBPrint << std::endl;
+      std::cout << rFPrint << std::endl;
+      std::cout << rBPrint << std::endl;
 
-    // std::string lFPrint = "leftFront.spinToPosition(" + to_string(lfPosition) + ", vex::rotationUnits::deg, false);";
-    // std::string lBPrint = "leftBack.spinToPosition(" + to_string(lbPosition) + ", vex::rotationUnits::deg, false);";
-    // std::string rFPrint = "rightFront.spinToPosition(" + to_string(rfPosition) + ", vex::rotationUnits::deg, false);";
-    // std::string rBPrint = "rightBack.spinToPosition(" + to_string(rbPosition) + ", vex::rotationUnits::deg, true);";
-    // std::string waitStatement = "wait(25, msec);";
-    // std::cout << lFPrint;
-    // std::cout << lBPrint;
-    // std::cout << rFPrint;
-    // std::cout << rBPrint;
-    // std::cout << waitStatement;
-    lfPos = leftFront.position(degrees);
-    lbPos = leftBack.position(degrees);
-    rfPos = rightFront.position(degrees);
-    rbPos = rightBack.position(degrees);
-
-    // if ((leftFront.position(degrees) != lfPos))
-    // {
-      lfPos = leftFront.position(degrees);
-      lbPos = leftBack.position(degrees);
-      rfPos = rightFront.position(degrees);
-      rbPos = rightBack.position(degrees);
-      printf("leftFront.spinToPosition(%f, degrees, false);\n", lfPos);
-      printf("leftBack.spinToPosition(%f, degrees, false);\n", lbPos);
-      printf("rightFront.spinToPosition(%f, degrees, false);\n", rfPos);
-      printf("rightBack.spinToPosition(%f, degrees, false);\n", rbPos);
-      printf("wait(250, msec);\n");
-      wait(250, msec);
-    // }
-
-    // }
-
-    // Printing to SD Card if Attached
-    // if (Brain.SDcard.isInserted())
-    // {
-    //   FILE *autonProg = fopen("autonProg.txt", "a");
-    //   std::string leftDriveStr = "LD" + to_string(currentLeftDrivePosition) + "\n";
-    //   std::string rightDriveStr = "RD" + to_string(currentRightDrivePosition) + "\n";
-    //   fprintf(autonProg, leftDriveStr.c_str());
-    //   fprintf(autonProg, rightDriveStr.c_str());
-    //   fclose(autonProg);
-    // }
+      // Printing to SD Card if Attached
+      if (Brain.SDcard.isInserted())
+      {
+        FILE *autonProg = fopen("autonProg.txt", "a");
+        std::string leftDriveStr = "LD" + to_string(currentLeftDrivePosition) + "\n";
+        std::string rightDriveStr = "RD" + to_string(currentRightDrivePosition) + "\n";
+        fprintf(autonProg, leftDriveStr.c_str());
+        fprintf(autonProg, rightDriveStr.c_str());
+        fclose(autonProg);
+      }
+    }
 
     // Arm Tracking
 
-    // // If arm motors aren't spinning and there is a difference in position
-    // if ((!armMotors.isSpinning()) && (currentArmPosition != (rightArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0))
-    // {
-    //   currentArmPosition = (rightArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
-    //   std::string armPrint = "armMotors.spinTo(" + to_string(currentArmPosition) + ", vex::rotationUnits::deg, false);";
-    //   std::cout << armPrint << std::endl;
+    // If arm motors aren't spinning and there is a difference in position
+    if ((!armMotors.isSpinning()) && (currentArmPosition != (rightArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0))
+    {
+      currentArmPosition = (rightArm.position(vex::rotationUnits::deg) + rightArm.position(vex::rotationUnits::deg)) / 2.0;
+      std::string armPrint = "armMotors.spinTo(" + to_string(currentArmPosition) + ", vex::rotationUnits::deg, false);";
+      std::cout << armPrint << std::endl;
 
-    //   // Printing to SD Card if Attached
-    //   // if (Brain.SDcard.isInserted())
-    //   // {
-    //   //   FILE *autonProg = fopen("autonProg.txt", "a");
-    //   //   std::string armStr = "A" + to_string(currentArmPosition) + "\n";
-    //   //   fprintf(autonProg, armStr.c_str());
-    //   //   fclose(autonProg);
-    //   // }
-    // }
+      // Printing to SD Card if Attached
+      if (Brain.SDcard.isInserted())
+      {
+        FILE *autonProg = fopen("autonProg.txt", "a");
+        std::string armStr = "A" + to_string(currentArmPosition) + "\n";
+        fprintf(autonProg, armStr.c_str());
+        fclose(autonProg);
+      }
+    }
 
-    // // Intake Tracking
+    // Intake Tracking
 
-    // // If intake motors aren't spinning and there is a difference in position
-    // if ((!intakeMotors.isSpinning()) && (currentIntakePosition != (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0))
-    // {
-    //   currentIntakePosition = (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0;
-    //   std::string intakePrint = "intakeMotors.spinTo(" + to_string(currentIntakePosition) + ", vex::rotationUnits::deg, false);";
-    //   std::cout << intakePrint << std::endl;
+    // If intake motors aren't spinning and there is a difference in position
+    if ((!intakeMotors.isSpinning()) && (currentIntakePosition != (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0))
+    {
+      currentIntakePosition = (leftIntake.position(vex::rotationUnits::deg) + rightIntake.position(vex::rotationUnits::deg)) / 2.0;
+      std::string intakePrint = "intakeMotors.spinTo(" + to_string(currentIntakePosition) + ", vex::rotationUnits::deg, false);";
+      std::cout << intakePrint << std::endl;
 
-    //   // Printing to SD Card if Attached
-    //   // if (Brain.SDcard.isInserted())
-    //   // {
-    //   //   FILE *autonProg = fopen("autonProg.txt", "a");
-    //   //   std::string intakeStr = "I" + to_string(currentIntakePosition) + "\n";
-    //   //   fprintf(autonProg, intakeStr.c_str());
-    //   //   fclose(autonProg);
-    //   // }
-    // }
+      // Printing to SD Card if Attached
+      if (Brain.SDcard.isInserted())
+      {
+        FILE *autonProg = fopen("autonProg.txt", "a");
+        std::string intakeStr = "I" + to_string(currentIntakePosition) + "\n";
+        fprintf(autonProg, intakeStr.c_str());
+        fclose(autonProg);
+      }
+    }
 
-    // // Clamp Tracking
+    // Clamp Tracking
 
-    // // If there is a difference in position
-    // if (currentClampPosition != clamp.value())
-    // {
-    //   currentClampPosition = clamp.value();
+    // If there is a difference in position
+    if (currentClampPosition != clamp.value())
+    {
+      currentClampPosition = clamp.value();
 
-    //   std::string clampPositionStr = currentClampPosition ? "true" : "false";
-    //   std::string clampPrint = "clamp.set(" + clampPositionStr + ");";
-    //   std::cout << clampPrint << std::endl;
+      std::string clampPositionStr = currentClampPosition ? "true" : "false";
+      std::string clampPrint = "clamp.set(" + clampPositionStr + ");";
+      std::cout << clampPrint << std::endl;
 
-    //   // Printing to SD Card if Attached
-    //   // if (Brain.SDcard.isInserted())
-    //   // {
-    //   //   FILE *autonProg = fopen("autonProg.txt", "a");
-    //   //   std::string clampStr = "C" + to_string(currentClampPosition) + "\n";
-    //   //   fprintf(autonProg, clampStr.c_str());
-    //   //   fclose(autonProg);
-    //   // }
-    // }
-    // wait(100, msec);
+      // Printing to SD Card if Attached
+      if (Brain.SDcard.isInserted())
+      {
+        FILE *autonProg = fopen("autonProg.txt", "a");
+        std::string clampStr = "C" + to_string(currentClampPosition) + "\n";
+        fprintf(autonProg, clampStr.c_str());
+        fclose(autonProg);
+      }
+    }
+    wait(100, msec);
   }
 }
+
 /*------------------------------------------------------------------------------------*/
 /*                                                                                    */
 /*                       VEX COMPETITION CONTROLLED FUNCTIONS                         */
@@ -1112,7 +1088,7 @@ void autonomousTracking()
  * @brief VEX Competition Controlled Function: pre-game initializations, thread initializations, auton selection prompting
  * @relates main()
  * @author Leo Abubucker
- * @date 09/10/2024
+ * @date 19/11/2024
  */
 void pre_auton()
 {
@@ -1126,43 +1102,40 @@ void pre_auton()
   myMotorCollection.addMotor(rightIntake, "RI");
   myMotorCollection.addMotor(leftIntake, "LI");
 
-  // Thread Initialization
-
-
   // Auton Selection
   autonSelector = 0;
-  // autonSelection(); BAD
+  /** autonSelection(); @bug */
 
   // Motor Initialization
   allMotors.setMaxTorque(100, vex::percentUnits::pct);
   allMotors.setVelocity(100, vex::percentUnits::pct);
-  // allMotors.setTimeout(5, vex::timeUnits::sec);
   armMotors.setTimeout(5, vex::timeUnits::sec);
   nonDriveMotors.setStopping(vex::brakeType::hold);
   allMotors.resetPosition();
+
+  // Thread Intialization
   thread guiUpdatingThread = thread(drawGUI);
   thread motorTrackingThread = thread(motorTracking);
-  // thread autonTrackingThread = thread(autonomousTracking); BAD
+  /** thread autonTrackingThread = thread(autonomousTracking); @bug */
 }
 
 /**
  * @brief VEX Competition Controlled Function: 15 seconds of autonomous robot movement
  * @relates main()
  * @authors Leo Abubucker, Jack Deise
- * @date 09/10/2024
+ * @date 10/11/2024
  */
 void autonomous()
 {
   if (autonSelector == 0)
   {
-    // drive(5, FORWARD, 20);
-    // intakeMotors.spinFor(500, vex::rotationUnits::deg, 20, vex::velocityUnits::pct, true);
+    // H2H auton code
     armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
     drive(9, FORWARD, 20);
-    intakeMotors.spinFor(230, vex::rotationUnits::deg, 40, vex::velocityUnits::pct, true);
+    intakeMotors.spinFor(50, vex::rotationUnits::deg, 40, vex::velocityUnits::pct, true);
     armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
     drive(1, FORWARD, 20);
-    armMotors.spinToPosition(380, vex::rotationUnits::deg, 100, vex::velocityUnits::pct, true);
+    armMotors.spinToPosition(360, vex::rotationUnits::deg, 100, vex::velocityUnits::pct, true);
     drive(4, REVERSE, 20);
     drive(4, FORWARD, 100);
     drive(10, REVERSE, 20);
@@ -1171,7 +1144,18 @@ void autonomous()
   }
   else if (autonSelector == 1)
   {
-    // Alternative Auton
+    // Auton skills code
+    armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
+    drive(9, FORWARD, 20);
+    intakeMotors.spinFor(50, vex::rotationUnits::deg, 40, vex::velocityUnits::pct, true);
+    armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
+    drive(1, FORWARD, 20);
+    armMotors.spinToPosition(360, vex::rotationUnits::deg, 100, vex::velocityUnits::pct, true);
+    drive(4, REVERSE, 20);
+    drive(4, FORWARD, 100);
+    drive(10, REVERSE, 20);
+    turn(45, RIGHT, 50);
+    drive(72, FORWARD, 80);
   }
   else if (autonSelector == 2)
   {
@@ -1183,14 +1167,14 @@ void autonomous()
  * @brief VEX Competition Controlled Function: 1 minute 45 second loop of user-controlled robot movement
  * @relates main()
  * @author Leo Abubucker
- * @date 09/10/2024
+ * @date 10/11/2024
  */
 void usercontrol()
 {
   bool clampState = false;
   bool clampLastState = false;
 
-  // thread timeTrackingThread = thread(timeTracking);
+  thread timeTrackingThread = thread(timeTracking);
 
   // User control code here, inside the loop
   while (1)
