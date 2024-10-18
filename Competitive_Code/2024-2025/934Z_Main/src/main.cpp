@@ -54,6 +54,7 @@ using namespace vex;
 /*  Non-VEX Initializations:                                                          */
 /*  - bool waitingForUserInput = false - boolean representing whether the user has    */
 /*      provided input confirming the autonomous program to be run.                   */
+/*                                                                                    */
 /*------------------------------------------------------------------------------------*/
 
 // VEX Declarations
@@ -72,15 +73,13 @@ motor rightBack = motor(PORT13, ratio18_1, false);
 motor rightFront = motor(PORT14, ratio18_1, false);
 motor_group allMotors = motor_group(rightIntake, rightArm, leftArm, leftBack, leftFront, rightBack, rightFront, leftIntake);
 motor_group driveMotors = motor_group(leftBack, leftFront, rightBack, rightFront);
-motor_group leftDriveMotors = motor_group(leftFront, leftBack);
-motor_group rightDriveMotors = motor_group(rightFront, rightBack);
 motor_group nonDriveMotors = motor_group(rightIntake, rightArm, leftArm);
 motor_group armMotors = motor_group(rightArm, leftArm);
 motor_group intakeMotors = motor_group(leftIntake, rightIntake);
 triport myTriport = triport(Brain.ThreeWirePort);
 pneumatics clamp = pneumatics(myTriport.A);
 bumper autonSelectionBumper = bumper(myTriport.E);
-bumper autonConfirmationBumper = bumper(myTriport.G);
+bumper autonConfirmationBumper = bumper(myTriport.C);
 
 // Non-VEX Declarations
 int autonSelector;
@@ -155,6 +154,7 @@ bool waitingForUserInput = false;
 /*  - void motorTracking() - thread function that routinely check status of motors    */
 /*  - void timeTracking() - thread function that alerts controller w/ time updates    */
 /*  - void autonTracking() - thread function tracks and interprets motor positions    */
+/*                                                                                    */
 /*------------------------------------------------------------------------------------*/
 
 /**
@@ -285,14 +285,15 @@ public:
    */
   std::vector<bool> isConnected()
   {
-    Controller1.Screen.clearLine();
-    Controller1.Screen.setCursor(0, 0);
+
     std::vector<bool> motorConnections;
     for (int i = 0; i < motorList.size(); i++)
     {
       motorConnections.push_back(motorList[i].installed());
       if (!motorList[i].installed())
       {
+        Controller1.Screen.clearLine();
+        Controller1.Screen.setCursor(0, 0);
         Controller1.Screen.print(motorNamesList[i].c_str());
         Controller1.Screen.print(" ");
       }
@@ -391,7 +392,7 @@ MotorCollection myMotorCollection;
 /**
  * @brief gets the state of the VEX V5 Competition Control as a String
  * @relates drawModeDisplayFrame()
- * @returns std::string "AUTON", "DRIVER", "PRE-AUTON", or "DISABLED"
+ * @returns GameStates AUTONOMOUS, USER_CONTROL, PRE_AUTONOMOUS, or DISABLED
  * @author Leo Abubucker
  * @date 07/21/2024
  */
@@ -846,6 +847,21 @@ void drawGUI()
 }
 
 /**
+ * @brief Non-threaded function that calls the six individual drawing functions to draw the entire GUI
+ * @relates autonSelection(), pre_auton(), autonomous(), usercontrol()
+ * @author Leo Abubucker
+ * @date 09/19/2024
+ */
+void manuallyDrawGUI()
+{
+  drawControlsFrame();
+  drawAutonSelectorFrame();
+  drawModeDisplayFrame();
+  drawMotorDebugFrame();
+  drawBatteryInfoFrame();
+  drawControllerInfoFrame();
+}
+/**
  * @brief manages user input for the auton selector
  * @relates pre_auton()
  * @author Leo Abubucker
@@ -883,6 +899,7 @@ void autonSelection()
         {
           autonSelector = 0;
         }
+        manuallyDrawGUI();
         wait(200, msec);
       }
     }
@@ -898,12 +915,15 @@ void autonSelection()
       {
         autonSelector = 0;
       }
+      manuallyDrawGUI();
+      wait(200, msec);
     }
 
     // Checks if the user presses the physical auton confirmation bumper
     if (autonConfirmationBumper.pressing() == 1)
     {
       waitingForUserInput = false;
+      manuallyDrawGUI();
     }
     wait(20, msec);
   }
@@ -934,31 +954,84 @@ void motorTracking()
 void timeTracking()
 {
   int timeCheck = 0;
+  int time = 0;
+  bool isH2H = false;
+
   while (true)
   {
-
-    // Time update on controller at 1 minute, 30 seconds, and 10 seconds
-    if (atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 63 && timeCheck == 0)
+    if (Competition.isAutonomous() && !isH2H)
     {
-      Controller1.Screen.clearLine();
-      Controller1.rumble(".");
-      Controller1.Screen.print("1 Minute Remaining");
-      timeCheck++;
+      isH2H = true;
     }
-    else if (atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 93 && timeCheck == 1)
+    else if (Competition.isDriverControl() && isH2H)
     {
-      Controller1.Screen.clearLine();
-      Controller1.rumble(". .");
-      Controller1.Screen.print("30 Seconds Remaining");
-      timeCheck++;
+      Controller1.Screen.print("User Control - H2H");
+      while (Competition.isDriverControl())
+      {
+        time++;
+        // Time update on controller at 1 minute, 30 seconds, and 10 seconds
+        if (time >= 45 && timeCheck == 0)
+        {
+          Controller1.Screen.clearLine();
+          Controller1.Screen.setCursor(0, 0);
+          Controller1.rumble(".");
+          Controller1.Screen.print("1 Minute Remaining");
+          timeCheck++;
+        }
+        else if (time >= 75 && timeCheck == 1)
+        {
+          Controller1.Screen.clearLine();
+          Controller1.Screen.setCursor(0, 0);
+          Controller1.rumble(". .");
+          Controller1.Screen.print("30 Seconds Remaining");
+          timeCheck++;
+        }
+        else if (time >= 95 && timeCheck == 2)
+        {
+          Controller1.Screen.clearLine();
+          Controller1.Screen.setCursor(0, 0);
+          Controller1.rumble(". . .");
+          Controller1.Screen.print("10 Seconds Remaining");
+          timeCheck++;
+        }
+        wait(1, sec);
+      }
     }
-    else if (atoi(to_string(Brain.timer(vex::timeUnits::sec)).c_str()) >= 113 && timeCheck == 2)
+    else if (Competition.isDriverControl() && !isH2H)
     {
-      Controller1.Screen.clearLine();
-      Controller1.rumble(". . .");
-      Controller1.Screen.print("10 Seconds Remaining");
-      timeCheck++;
+      Controller1.Screen.print("User Control - Skills");
+      while (Competition.isDriverControl())
+      {
+        time++;
+        // Time update on controller at 45 seconds, 30 seconds, and 15 seconds
+        if (time >= 15 && timeCheck == 0)
+        {
+          Controller1.Screen.clearLine();
+          Controller1.Screen.setCursor(0, 0);
+          Controller1.rumble(".");
+          Controller1.Screen.print("45 Seconds Remaining");
+          timeCheck++;
+        }
+        else if (time >= 30 && timeCheck == 1)
+        {
+          Controller1.Screen.clearLine();
+          Controller1.Screen.setCursor(0, 0);
+          Controller1.rumble(". .");
+          Controller1.Screen.print("30 Seconds Remaining");
+          timeCheck++;
+        }
+        else if (time >= 45 && timeCheck == 2)
+        {
+          Controller1.Screen.clearLine();
+          Controller1.Screen.setCursor(0, 0);
+          Controller1.rumble(". . .");
+          Controller1.Screen.print("15 Seconds Remaining");
+          timeCheck++;
+        }
+        wait(1, sec);
+      }
     }
+    wait(1, sec);
   }
 }
 
@@ -1082,13 +1155,14 @@ void autonomousTracking()
 /*  - void usercontrol() - update GUI, check motors, 1m45s loop of user-controlled    */
 /*    robot movement                                                                  */
 /*  - int main() - controls all other VEX controlled functions - DO NOT EDIT          */
+/*                                                                                    */
 /*------------------------------------------------------------------------------------*/
 
 /**
  * @brief VEX Competition Controlled Function: pre-game initializations, thread initializations, auton selection prompting
  * @relates main()
  * @author Leo Abubucker
- * @date 19/11/2024
+ * @date 9/11/2024
  */
 void pre_auton()
 {
@@ -1104,12 +1178,11 @@ void pre_auton()
 
   // Auton Selection
   autonSelector = 0;
-  /** autonSelection(); @bug */
 
   // Motor Initialization
   allMotors.setMaxTorque(100, vex::percentUnits::pct);
   allMotors.setVelocity(100, vex::percentUnits::pct);
-  armMotors.setTimeout(5, vex::timeUnits::sec);
+  armMotors.setTimeout(2, vex::timeUnits::sec);
   nonDriveMotors.setStopping(vex::brakeType::hold);
   allMotors.resetPosition();
 
@@ -1117,6 +1190,9 @@ void pre_auton()
   thread guiUpdatingThread = thread(drawGUI);
   thread motorTrackingThread = thread(motorTracking);
   /** thread autonTrackingThread = thread(autonomousTracking); @bug */
+  thread timeTrackingThread = thread(timeTracking);
+
+  autonSelection(); //@bug
 }
 
 /**
@@ -1174,8 +1250,6 @@ void usercontrol()
   bool clampState = false;
   bool clampLastState = false;
 
-  thread timeTrackingThread = thread(timeTracking);
-
   // User control code here, inside the loop
   while (1)
   {
@@ -1230,11 +1304,11 @@ void usercontrol()
     // Intake Controls
     if (Controller1.ButtonL1.pressing())
     {
-      intakeMotors.spin(vex::directionType::fwd);
+      intakeMotors.spin(vex::directionType::rev);
     }
     else if (Controller1.ButtonL2.pressing())
     {
-      intakeMotors.spin(vex::directionType::rev);
+      intakeMotors.spin(vex::directionType::fwd);
     }
     else
     {
@@ -1244,6 +1318,7 @@ void usercontrol()
     // Arm Controls
     if (Controller1.ButtonUp.pressing())
     {
+      // Positition to go to the top of a neutral wall stake
       armMotors.spinToPosition(720, vex::rotationUnits::deg, true);
     }
     else if (Controller1.ButtonDown.pressing())
@@ -1257,6 +1332,16 @@ void usercontrol()
     else if (Controller1.ButtonR2.pressing())
     {
       armMotors.spin(vex::directionType::rev);
+    }
+    else if (Controller1.ButtonB.pressing())
+    {
+      // Position to go to the top of an alliance wall stake
+      armMotors.spinToPosition(600, vex::rotationUnits::deg, true);
+    }
+    else if (Controller1.ButtonA.pressing())
+    {
+      // Position to go to the top ring of a fully filled mobile goal stake
+      armMotors.spinToPosition(320, vex::rotationUnits::deg, true);
     }
     else
     {
