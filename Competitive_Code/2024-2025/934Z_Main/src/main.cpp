@@ -81,6 +81,8 @@ pneumatics clamp = pneumatics(myTriport.A);
 bumper autonSelectionBumper = bumper(myTriport.E);
 bumper autonConfirmationBumper = bumper(myTriport.C);
 
+inertial inertialSensor = inertial(PORT20);
+
 // Non-VEX Declarations
 int autonSelector;
 std::map<std::string, int> autonSelectorFrame;
@@ -826,6 +828,21 @@ void drawControllerInfoFrame()
   Brain.Screen.setPenColor(color::white);
 }
 
+void drawLogo(){
+    // Coordinates of the motor debug frame
+  std::map<std::string, int> guiFrame = {
+      {"x-left", 405},
+      {"x-right", 479},
+      {"y-top", 179},
+      {"y-bottom", 240}};
+
+  // Draws a maroon rectangle at the above coordinates
+    Brain.Screen.drawRectangle(guiFrame["x-left"], guiFrame["y-top"], guiFrame["x-right"] - guiFrame["x-left"], guiFrame["y-bottom"] - guiFrame["y-top"], color(128, 0, 0));
+  //   std::string file = "934Logo";
+  // bool var = Brain.Screen.drawImageFromFile('934Logo.png',0, 0);
+  //   std::cout << var << std::endl;
+}
+
 /**
  * @brief Threaded function that calls the six individual drawing functions to draw the entire GUI every 5 seconds
  * @relates autonSelection(), pre_auton(), autonomous(), usercontrol()
@@ -842,6 +859,7 @@ void drawGUI()
     drawMotorDebugFrame();
     drawBatteryInfoFrame();
     drawControllerInfoFrame();
+    drawLogo();
     wait(5, vex::timeUnits::sec);
   }
 }
@@ -1142,6 +1160,67 @@ void autonomousTracking()
   }
 }
 
+/**
+ * @brief Function that calibrates inertial sensor
+ * @relates pre_auton()
+ * @author Leo Abubucker
+ * @date 09/22/2024
+ */
+void calibrateInertial()
+{
+  if (inertialSensor.installed())
+  {
+    inertialSensor.calibrate();
+    while (inertialSensor.isCalibrating())
+    {
+      wait(100, msec);
+    }
+    Controller1.Screen.print("INERTIAL CALIBRATED");
+    std::string prn = "INERTIAL CALIBRATED";
+    std::cout << prn << std::endl;
+  }
+}
+
+/**
+ * @brief Function that turns a certain direction a certain amount of degrees using the inertial sensor
+ * @relates usercontrol()
+ * @author Leo Abubucker
+ * @date 09/22/2024
+ */
+void inertialTurn(float degrees, MovementDirections dir)
+{
+  float actualHeading = inertialSensor.heading(vex::rotationUnits::deg);
+  float targetHeading = degrees;
+  float error = targetHeading - actualHeading;
+  float motorSpeed = 0.5 * std::abs(error);
+  if(inertialSensor.installed()){
+    while(inertialSensor.isCalibrating()){
+      wait(100, msec);
+    }
+  while (std::abs(error) > 1.0)
+  {
+    actualHeading = inertialSensor.heading(vex::rotationUnits::deg);
+    error = targetHeading - actualHeading;
+    motorSpeed = 0.5 * std::abs(error);
+    if (dir == RIGHT)
+    {
+      leftFront.spin(vex::directionType::fwd, motorSpeed, vex::velocityUnits::pct);
+      leftBack.spin(vex::directionType::fwd, motorSpeed, vex::velocityUnits::pct);
+      rightFront.spin(vex::directionType::rev, motorSpeed, vex::velocityUnits::pct);
+      rightBack.spin(vex::directionType::rev, motorSpeed, vex::velocityUnits::pct);
+    }
+    else
+    {
+      leftFront.spin(vex::directionType::rev, motorSpeed, vex::velocityUnits::pct);
+      leftBack.spin(vex::directionType::rev, motorSpeed, vex::velocityUnits::pct);
+      rightFront.spin(vex::directionType::fwd, motorSpeed, vex::velocityUnits::pct);
+      rightBack.spin(vex::directionType::fwd, motorSpeed, vex::velocityUnits::pct);
+    }
+
+    wait(150, msec);
+  }
+  }
+}
 /*------------------------------------------------------------------------------------*/
 /*                                                                                    */
 /*                       VEX COMPETITION CONTROLLED FUNCTIONS                         */
@@ -1166,6 +1245,7 @@ void autonomousTracking()
  */
 void pre_auton()
 {
+  calibrateInertial();
   // MotorCollection Initialization
   myMotorCollection.addMotor(rightArm, "LA");
   myMotorCollection.addMotor(leftArm, "RA");
@@ -1191,8 +1271,8 @@ void pre_auton()
   thread motorTrackingThread = thread(motorTracking);
   /** thread autonTrackingThread = thread(autonomousTracking); @bug */
   thread timeTrackingThread = thread(timeTracking);
-
-  autonSelection(); //@bug
+  autonSelection();
+  Controller1.Screen.print("PREAUTON FINISHED");
 }
 
 /**
@@ -1203,20 +1283,61 @@ void pre_auton()
  */
 void autonomous()
 {
+
   if (autonSelector == 0)
   {
+    armMotors.spinToPosition(440, vex::rotationUnits::deg, true);
+    drive(24, FORWARD, 80);
+    armMotors.spinToPosition(250, vex::rotationUnits::deg, true);
+    intakeMotors.spinToPosition(500, vex::rotationUnits::deg, false);
+    drive(6, REVERSE, 80);
+    drive(6, FORWARD, 80);
+    drive(14, REVERSE, 80);
+    armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
+    turn(60, RIGHT, 50);
+    drive(24, FORWARD, 80);
+    // armMotors.spinToPosition(100, vex::rotationUnits::deg, true);
+    // intakeMotors.spinFor(100,vex::rotationUnits::deg, 100, vex::velocityUnits::pct, false);
+    // drive(12, FORWARD, 80);
+
+    // armMotors.spinToPosition(100, vex::rotationUnits::deg, true);
+    // intakeMotors.spinFor(100,vex::rotationUnits::deg, 100, vex::velocityUnits::pct, true);
+    // drive(12, REVERSE, 80);
+    // inertialTurn(270, RIGHT);
+    // armMotors.spinToPosition(440, vex::rotationUnits::deg, true);
+    // drive(12, FORWARD, 80);
+    // armMotors.spinToPosition(250, vex::rotationUnits::deg, true);
+    // intakeMotors.spinToPosition(100, vex::rotationUnits::deg, false);
+    // drive(6, REVERSE, 80);
+
+    // inertialTurn(90, LEFT);
+    // armMotors.spinToPosition(50, vex::rotationUnits::deg, true);
+    // intakeMotors.spinFor(500, vex::rotationUnits::deg, 50, vex::velocityUnits::pct, false);
+    // drive(24, FORWARD, 80);
+    // inertialTurn(180, LEFT);
+    // armMotors.spinToPosition(600, vex::rotationUnits::deg, true);
+    // drive(48, REVERSE, 80);
+
+    // inertialTurn(45, LEFT);
+    // inertialTurn(135, RIGHT);
+    // inertialTurn(180, LEFT);
+
+    // turn(90, RIGHT, 50);
+    // turn(45, RIGHT, 50);
+    // turn(315, LEFT, 50);
+
     // H2H auton code
-    armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
-    drive(9, FORWARD, 20);
-    intakeMotors.spinFor(50, vex::rotationUnits::deg, 40, vex::velocityUnits::pct, true);
-    armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
-    drive(1, FORWARD, 20);
-    armMotors.spinToPosition(360, vex::rotationUnits::deg, 100, vex::velocityUnits::pct, true);
-    drive(4, REVERSE, 20);
-    drive(4, FORWARD, 100);
-    drive(10, REVERSE, 20);
-    turn(120, RIGHT, 50);
-    drive(30, FORWARD, 100);
+    // armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
+    // drive(9, FORWARD, 20);
+    // intakeMotors.spinFor(50, vex::rotationUnits::deg, 40, vex::velocityUnits::pct, true);
+    // armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
+    // drive(1, FORWARD, 20);
+    // armMotors.spinToPosition(360, vex::rotationUnits::deg, 100, vex::velocityUnits::pct, true);
+    // drive(4, REVERSE, 20);
+    // drive(4, FORWARD, 100);
+    // drive(10, REVERSE, 20);
+    // turn(120, RIGHT, 50);
+    // drive(30, FORWARD, 100);
   }
   else if (autonSelector == 1)
   {
@@ -1231,7 +1352,13 @@ void autonomous()
     drive(4, FORWARD, 100);
     drive(10, REVERSE, 20);
     turn(45, RIGHT, 50);
-    drive(72, FORWARD, 80);
+    drive(50, FORWARD, 80);
+    turn(20, LEFT, 50);
+    drive(30, RIGHT, 80);
+    turn(20, RIGHT, 50);
+    drive(50, REVERSE, 80);
+    turn(20, RIGHT, 50);
+    drive(30, FORWARD, 80);
   }
   else if (autonSelector == 2)
   {
@@ -1342,6 +1469,16 @@ void usercontrol()
     {
       // Position to go to the top ring of a fully filled mobile goal stake
       armMotors.spinToPosition(320, vex::rotationUnits::deg, true);
+    }
+    else if (Controller1.ButtonLeft.pressing())
+    {
+      // Position to go to climb position
+      armMotors.spinToPosition(970, vex::rotationUnits::deg, true);
+    }
+    else if (Controller1.ButtonRight.pressing())
+    {
+      // Position to go to climb position
+      armMotors.spinToPosition(970, vex::rotationUnits::deg, true);
     }
     else
     {
