@@ -1,6 +1,8 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "pros/abstract_motor.hpp"
+#include "pros/adi.h"
+#include "pros/adi.hpp"
 #include "pros/misc.h"
 #include "pros/motor_group.hpp"
 #include "pros/motors.h"
@@ -21,6 +23,9 @@ pros::MotorGroup armMotors({-9, 1}, pros::MotorGearset::red);
 
 // Inertial Sensor on port 20
 pros::Imu imu(20);
+
+// Piston
+pros::adi::DigitalOut clamp (1);
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
@@ -176,7 +181,8 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-
+	bool clampState = false;
+	bool clampLastState = false;
 	while (true) {                           // Run for 20 ms then update
 	}
 
@@ -220,5 +226,21 @@ void opcontrol() {
 	}
 	else{
 		armMotors.brake();
+	}
+
+	// Clamp Controls
+	if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_X) && !clampLastState){
+		clampState = !clampState;
+		clampLastState = true;
+	}
+	else if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
+		clampLastState = false;
+	}	
+
+	if(clampState){
+		clamp.set_value(true);
+	}
+	else{
+		clamp.set_value(false);
 	}
 }
