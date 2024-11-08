@@ -1191,6 +1191,9 @@ void inertialTurn(float degrees, MovementDirections dir)
 {
   float actualHeading = inertialSensor.heading(vex::rotationUnits::deg);
   float targetHeading = degrees;
+  if(dir == LEFT){
+    targetHeading += 180;
+  }
   float error = targetHeading - actualHeading;
   float motorSpeed = 0.5 * std::abs(error);
   if(inertialSensor.installed()){
@@ -1200,6 +1203,10 @@ void inertialTurn(float degrees, MovementDirections dir)
   while (std::abs(error) > 1.0)
   {
     actualHeading = inertialSensor.heading(vex::rotationUnits::deg);
+    std::string prn1 = "Actual: ";
+    std::cout << prn1 << actualHeading << std::endl;
+    std::string prn2 = "Target: ";
+    std::cout << prn2 << targetHeading << std::endl;
     error = targetHeading - actualHeading;
     motorSpeed = 0.5 * std::abs(error);
     if (dir == RIGHT)
@@ -1286,47 +1293,55 @@ void autonomous()
 
   if (autonSelector == 0)
   {
-    armMotors.spinToPosition(440, vex::rotationUnits::deg, true);
-    drive(24, FORWARD, 80);
-    armMotors.spinToPosition(250, vex::rotationUnits::deg, true);
-    intakeMotors.spinToPosition(500, vex::rotationUnits::deg, false);
-    drive(6, REVERSE, 80);
-    drive(6, FORWARD, 80);
-    drive(14, REVERSE, 80);
-    armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
-    turn(60, RIGHT, 50);
-    drive(24, FORWARD, 80);
-    // armMotors.spinToPosition(100, vex::rotationUnits::deg, true);
-    // intakeMotors.spinFor(100,vex::rotationUnits::deg, 100, vex::velocityUnits::pct, false);
-    // drive(12, FORWARD, 80);
-
-    // armMotors.spinToPosition(100, vex::rotationUnits::deg, true);
-    // intakeMotors.spinFor(100,vex::rotationUnits::deg, 100, vex::velocityUnits::pct, true);
-    // drive(12, REVERSE, 80);
-    // inertialTurn(270, RIGHT);
     // armMotors.spinToPosition(440, vex::rotationUnits::deg, true);
-    // drive(12, FORWARD, 80);
-    // armMotors.spinToPosition(250, vex::rotationUnits::deg, true);
-    // intakeMotors.spinToPosition(100, vex::rotationUnits::deg, false);
-    // drive(6, REVERSE, 80);
-
-    // inertialTurn(90, LEFT);
-    // armMotors.spinToPosition(50, vex::rotationUnits::deg, true);
-    // intakeMotors.spinFor(500, vex::rotationUnits::deg, 50, vex::velocityUnits::pct, false);
     // drive(24, FORWARD, 80);
-    // inertialTurn(180, LEFT);
-    // armMotors.spinToPosition(600, vex::rotationUnits::deg, true);
-    // drive(48, REVERSE, 80);
+    // armMotors.spinToPosition(250, vex::rotationUnits::deg, true);
+    // intakeMotors.spinToPosition(500, vex::rotationUnits::deg, false);
+    // drive(6, REVERSE, 80);
+    // drive(6, FORWARD, 80);
+    // drive(14, REVERSE, 80);
+    // armMotors.spinToPosition(0, vex::rotationUnits::deg, true);
+    // turn(60, LEFT, 50);
+    // drive(24, FORWARD, 40);
 
-    // inertialTurn(45, LEFT);
-    // inertialTurn(135, RIGHT);
-    // inertialTurn(180, LEFT);
-
+    // inertialTurn
+  }
+  else if (autonSelector == 1)
+  {
+    // // Auton skills code
+    // drive(12, FORWARD, 50);
     // turn(90, RIGHT, 50);
+    // drive(48, FORWARD, 80);
     // turn(45, RIGHT, 50);
-    // turn(315, LEFT, 50);
+    // drive(30, FORWARD, 80);
+    // drive(24, REVERSE, 80);
 
-    // H2H auton code
+    // turn(45, LEFT, 50);
+    // drive(60, REVERSE, 80);
+    // turn(30, LEFT, 50);
+    // drive(60, REVERSE, 80);
+    // turn(5, LEFT, 50);
+    // drive(50, FORWARD, 80);
+    // armMotors.spinToPosition(970, vex::rotationUnits::deg, true);
+    
+
+    drive(12, FORWARD, 50);
+    inertialTurn(90, RIGHT);
+    drive(20, REVERSE, 80);
+    inertialTurn(135, LEFT);
+    // drive(50, REVERSE, 80);
+    // drive(39, FORWARD, 80);
+    // inertialTurn(90, RIGHT);
+    // drive(60, FORWARD, 80);
+    // inertialTurn(45, RIGHT);
+    // drive(50, FORWARD, 80);
+
+// inertialTurn(45, LEFT);
+
+    // turn(135, LEFT, 50);
+    // drive(48, FORWARD, 80);
+    // turn(45, LEFT, 50);
+    // drive(24, FORWARD, 80);
     // armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
     // drive(9, FORWARD, 20);
     // intakeMotors.spinFor(50, vex::rotationUnits::deg, 40, vex::velocityUnits::pct, true);
@@ -1336,29 +1351,15 @@ void autonomous()
     // drive(4, REVERSE, 20);
     // drive(4, FORWARD, 100);
     // drive(10, REVERSE, 20);
-    // turn(120, RIGHT, 50);
-    // drive(30, FORWARD, 100);
-  }
-  else if (autonSelector == 1)
-  {
-    // Auton skills code
-    armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
-    drive(9, FORWARD, 20);
-    intakeMotors.spinFor(50, vex::rotationUnits::deg, 40, vex::velocityUnits::pct, true);
-    armMotors.spinToPosition(480, vex::rotationUnits::deg, true);
-    drive(1, FORWARD, 20);
-    armMotors.spinToPosition(360, vex::rotationUnits::deg, 100, vex::velocityUnits::pct, true);
-    drive(4, REVERSE, 20);
-    drive(4, FORWARD, 100);
-    drive(10, REVERSE, 20);
-    turn(45, RIGHT, 50);
-    drive(50, FORWARD, 80);
-    turn(20, LEFT, 50);
-    drive(30, RIGHT, 80);
-    turn(20, RIGHT, 50);
-    drive(50, REVERSE, 80);
-    turn(20, RIGHT, 50);
-    drive(30, FORWARD, 80);
+    // turn(45, RIGHT, 50);
+    // drive(50, FORWARD, 80);
+    // turn(20, LEFT, 50);
+    // drive(30, RIGHT, 80);
+    // turn(20, RIGHT, 50);
+    // drive(50, REVERSE, 80);
+    // turn(20, RIGHT, 50);
+    // drive(30, FORWARD, 80);
+
   }
   else if (autonSelector == 2)
   {
