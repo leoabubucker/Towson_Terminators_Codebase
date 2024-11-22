@@ -1,7 +1,8 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#include "lemlib/chassis/chassis.hpp"
+#include "lemlib/chassis/trackingWheel.hpp"
 #include "pros/abstract_motor.hpp"
-#include "pros/adi.h"
 #include "pros/adi.hpp"
 #include "pros/misc.h"
 #include "pros/motor_group.hpp"
@@ -30,9 +31,9 @@ pros::adi::DigitalOut clamp (1);
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
                               &rightMotors, // right motor group
-                              10, // 10 inch track width
-                              lemlib::Omniwheel::NEW_4, // using new 4" omnis
-                              360, // drivetrain rpm is 360
+                              9.2, // 10 inch track width
+                              lemlib::Omniwheel::OLD_275, // using new 4" omnis
+                              333.33, // drivetrain rpm is 360
                               2 // horizontal drift is 2. If we had traction wheels, it would have been 8
 );
 
@@ -151,20 +152,38 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
+	chassis.moveToPoint(0, 9, 2000);
+	chassis.turnToHeading(90, 2000);
+	chassis.moveToPoint(-40, 9, 4000, {false});
+	chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+	chassis.moveToPoint(-60, 0, 4000, {false});
+	chassis.moveToPoint(10, 22, 4000);
+	chassis.turnToHeading(290, 2000);
+	chassis.moveToPoint(70, -10, 4000, {false});
+	chassis.moveToPoint(50, 10, 2000);
+	chassis.moveToPoint(50, 110, 2000);
+	chassis.turnToHeading(300, 2000, {.direction=AngularDirection::CCW_COUNTERCLOCKWISE});
+	chassis.turnToHeading(125, 2000, {.direction=AngularDirection::CW_CLOCKWISE});
+	// chassis.moveToPoint(80, 20, 2000);
+	// chassis.turnToHeading(340, 2000, {AngularDirection::CW_CLOCKWISE});
+	// chassis.moveToPoint(80, 120, 2000);
+
+	// chassis.turnToHeading(-45, 2000);
+	// chassis.moveToPoint(-48, -10, 2000);
 	    // Move to x: 20 and y: 15, and face heading 90. Timeout set to 4000 ms
-    chassis.moveToPose(20, 15, 90, 4000);
+    // chassis.moveToPose(20, 15, 90, 4000);
     // Move to x: 0 and y: 0 and face heading 270, going backwards. Timeout set to 4000ms
-    chassis.moveToPose(0, 0, 270, 4000, {.forwards = false});
-    // cancel the movement after it has traveled 10 inches
-    chassis.waitUntil(10);
-    chassis.cancelMotion();
-    // Turn to face the point x:45, y:-45. Timeout set to 1000
-    // dont turn faster than 60 (out of a maximum of 127)
-    chassis.turnToPoint(45, -45, 1000, {.maxSpeed = 60});
-    // Turn to face a direction of 90º. Timeout set to 1000
-    // will always be faster than 100 (out of a maximum of 127)
-    // also force it to turn clockwise, the long way around
-    chassis.turnToHeading(90, 1000, {.direction = AngularDirection::CW_CLOCKWISE, .minSpeed = 100});
+    // chassis.moveToPose(0, 0, 270, 4000, {.forwards = false});
+    // // cancel the movement after it has traveled 10 inches
+    // chassis.waitUntil(10);
+    // chassis.cancelMotion();
+    // // Turn to face the point x:45, y:-45. Timeout set to 1000
+    // // dont turn faster than 60 (out of a maximum of 127)
+    // chassis.turnToPoint(45, -45, 1000, {.maxSpeed = 60});
+    // // Turn to face a direction of 90º. Timeout set to 1000
+    // // will always be faster than 100 (out of a maximum of 127)
+    // // also force it to turn clockwise, the long way around
+    // chassis.turnToHeading(90, 1000, {.direction = AngularDirection::CW_CLOCKWISE, .minSpeed = 100});
 }
 
 /**
