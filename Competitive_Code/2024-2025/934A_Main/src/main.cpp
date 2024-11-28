@@ -23,14 +23,16 @@ competition Competition;
 //working ports for old brain: 6, 7, 8, 13, 14, 18, 19, 21
 brain Brain;
 controller Controller1 = controller(primary);
-motor rightFront = motor(PORT8, ratio18_1, false);
-motor rightBack = motor(PORT19, ratio18_1, false);
-motor leftFront = motor(PORT14, ratio18_1, true);
-motor leftBack = motor(PORT18, ratio18_1, true);
-motor intake = motor(PORT1, ratio18_1, true);
-motor clamp = motor(PORT6, ratio18_1, true);
-motor claw = motor(PORT7, ratio18_1, true);
+motor rightFront = motor(PORT1, ratio18_1, true);
+motor rightBack = motor(PORT2, ratio18_1, true);
+motor leftFront = motor(PORT3, ratio18_1, false);
+motor leftBack = motor(PORT4, ratio18_1, false);
+motor internalIntake = motor(PORT5, ratio18_1, true);
+motor externalIntake = motor(PORT6, ratio18_1, true);
+triport myTriport = triport(Brain.ThreeWirePort);
+pneumatics clamp = pneumatics(myTriport.A);
 
+motor_group intake = motor_group(internalIntake, externalIntake);
 
 
 
@@ -94,6 +96,7 @@ void usercontrol(void) {
 
  //sensitivity for turning motor (higher value = more volts to turn and less volts to forward)
  double movementSensitivity = 0.5;
+ clamp.set(true);
 
 
  while (1) {
@@ -113,10 +116,10 @@ void usercontrol(void) {
    double turn = leftJoystickTurn * 0.12;
    double forward = rightJoystickForward * 0.12 * (1 - (std::abs(turn)/12.0) * movementSensitivity);
   
-   rightFront.spin(vex::directionType::fwd, forward - turn, vex::voltageUnits::volt);
-   rightBack.spin(vex::directionType::fwd, forward - turn, vex::voltageUnits::volt);
-   leftFront.spin(vex::directionType::fwd, forward + turn, vex::voltageUnits::volt);
-   leftBack.spin(vex::directionType::fwd, forward + turn, vex::voltageUnits::volt);
+   rightFront.spin(vex::directionType::fwd, forward + turn, vex::voltageUnits::volt);
+   rightBack.spin(vex::directionType::fwd, forward + turn, vex::voltageUnits::volt);
+   leftFront.spin(vex::directionType::fwd, forward - turn, vex::voltageUnits::volt);
+   leftBack.spin(vex::directionType::fwd, forward - turn, vex::voltageUnits::volt);
 
 
    /*
@@ -127,67 +130,41 @@ void usercontrol(void) {
    */
    bool L1pressing = Controller1.ButtonL1.pressing();
    bool L2pressing = Controller1.ButtonL2.pressing();
+   bool R1pressing = Controller1.ButtonR1.pressing();
+   bool R2pressing = Controller1.ButtonR2.pressing();
 
 
-   if(L1pressing)
+   if(R1pressing || R2pressing)
    {
-     intake.spin(vex::directionType::fwd, 12.0, vex::voltageUnits::volt);
-   }else if (L2pressing)
+     internalIntake.spin(vex::directionType::fwd, 10.0, vex::voltageUnits::volt);
+     externalIntake.spin(vex::directionType::fwd, -9.0, vex::voltageUnits::volt);
+   }else if (L1pressing || L2pressing)
    {
-     intake.spin(vex::directionType::fwd, -12.0, vex::voltageUnits::volt);
+     internalIntake.spin(vex::directionType::fwd, -10.0, vex::voltageUnits::volt);
+     externalIntake.spin(vex::directionType::fwd, 9.0, vex::voltageUnits::volt);
    }else
    {
      intake.spin(vex::directionType::fwd, 0, vex::voltageUnits::volt);
    }
 
 
-
-
-   /*
-               CLAW CONTROLS
-      
-       R1 for forward
-       R2 for reverse
-   */
-   bool R1pressing = Controller1.ButtonR1.pressing();
-   bool R2pressing = Controller1.ButtonR2.pressing();
-
-
-   if(R1pressing)
-   {
-     claw.spin(vex::directionType::fwd, 12.0, vex::voltageUnits::volt);
-   }else if (R2pressing)
-   {
-     claw.spin(vex::directionType::fwd, -12.0, vex::voltageUnits::volt);
-   }else
-   {
-     claw.spin(vex::directionType::fwd, 0, vex::voltageUnits::volt);
-   }
-
-
    /*
                CLAMP CONTROLS
 
-
-       X for forward    
-       B for reverse
+       X to extend    
+       B to retract
    */
    bool Xpressing = Controller1.ButtonX.pressing();
    bool Bpressing = Controller1.ButtonB.pressing();
-
+   bool clampOpen = true; 
 
    if(Xpressing)
    {
-     clamp.spin(vex::directionType::fwd, 12.0, vex::voltageUnits::volt);
+     clamp.set(true);
    }else if (Bpressing)
    {
-     clamp.spin(vex::directionType::fwd, -12.0, vex::voltageUnits::volt);
-   }else
-   {
-     clamp.spin(vex::directionType::fwd, 0, vex::voltageUnits::volt);
+     clamp.set(false);
    }
-
-
    // ........................................................................
 
 
