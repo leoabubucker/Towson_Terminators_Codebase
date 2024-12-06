@@ -4,12 +4,12 @@
 		"json": 2
 	},
 	"project": {
-		"name": "934Z_Main",
+		"name": "934Z_Main_DEPR",
 		"description": "",
 		"creationDate": "5/5/2024, 9:29:54 PM",
 		"platform": "V5",
 		"language": "cpp",
-		"slot": 1,
+		"slot": 2,
 		"sdkVersion": "V5_20240223_11_00_00",
 		"cpp": {
 			"includePath": [],
