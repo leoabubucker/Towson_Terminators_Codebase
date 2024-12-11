@@ -1300,25 +1300,29 @@ void autonomous()
 		chassis.moveToPoint(0, 25, 4000, {});
 		armMotors.move_absolute(2400, 100);
 		chassis.moveToPoint(0, 35, 4000, {}, false);
-		armMotors.move_absolute(1500, 100);
-		intakeMotors.move_relative(1000, 100);
+		armMotors.move_absolute(1400, 100);
+		intakeMotors.move_relative(1500, 80);
 		pros::delay(1000);
 		chassis.moveToPoint(0, 19, 4000, {false}, false);
-		chassis.turnToHeading(55, 2000);
-		armMotors.move_absolute(0, 100);
-		chassis.moveToPoint(15, 30, 4000, {});
-		intakeMotors.move_relative(-3000, 100);
-		chassis.moveToPoint(25, 40, 4000, {});
-		chassis.moveToPoint(0, 0, 4000, {false}, false);
-		chassis.turnToHeading(250, 3000, {AngularDirection::CCW_COUNTERCLOCKWISE});
-		armMotors.move_absolute(2600, 100);
-		chassis.moveToPoint(-13, 0, 4000, {}, false);
-		chassis.turnToHeading(230, 3000, {AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.moveToPoint(-20, -10, 2000, {}, false);
-		armMotors.move_absolute(1700, 100);
-		intakeMotors.move_relative(1000, 100);
-		pros::delay(1000);
-		chassis.moveToPoint(-10, 0, 2000, {false}, false);
+		// chassis.turnToHeading(205, 2000);
+		// armMotors.move_absolute(0, 100);
+		// chassis.moveToPoint(-15, 30, 4000, {});
+		
+		// chassis.moveToPoint(-25, 40, 4000, {});
+		// intakeMotors.move_relative(-1500, 100);
+		// chassis.moveToPoint(0, 0, 4000, {false}, false);
+		// chassis.turnToHeading(250, 3000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		// armMotors.move_absolute(2600, 100);
+		// chassis.moveToPoint(-13, 0, 4000, {}, false);
+		// chassis.turnToHeading(210, 3000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPoint(-20, -10, 2000, {}, false);
+		// intakeMotors.move_relative(3000, 100);
+		// pros::delay(300);
+		// armMotors.move_absolute(1700, 100);
+		// pros::delay(1000);
+		// chassis.moveToPoint(-10, 0, 2000, {false}, false);
+		// chassis.moveToPoint(-20, 5, 2000, {});
+		// armMotors.move_absolute(0, 100);
 
 		// clamp.set_value(true);
 		// chassis.moveToPoint(5, 30, 4000);
@@ -1326,21 +1330,48 @@ void autonomous()
 	}
 	else if (autonSelector == 1)
 	{
-		chassis.moveToPoint(0, 9, 2000);
+		clamp.set_value(true);
+		chassis.moveToPoint(0, 11, 2000, {}, false);
 		chassis.turnToHeading(90, 2000);
-		chassis.moveToPoint(-40, 9, 4000, {false});
+		chassis.moveToPoint(-40, 11, 4000, {false}, false);
 		chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.moveToPoint(-60, 0, 4000, {false});
+		chassis.moveToPoint(-60, -10, 4000, {false}, false);
 		chassis.moveToPoint(10, 22, 4000);
 		chassis.turnToHeading(290, 2000);
-		chassis.moveToPoint(70, -10, 4000, {false});
+		chassis.moveToPoint(70, -15, 4000, {false});
 		chassis.moveToPoint(50, 10, 2000);
+		chassis.turnToHeading(45, 2000);
+		// chassis.moveToPoint(30, 30, 3000);
+		// armMotors.move_absolute(4500, 100);
+		// chassis.moveToPoint(20, 40, 2000);
+
 		chassis.moveToPoint(50, 110, 2000);
 		chassis.turnToHeading(300, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
 		chassis.turnToHeading(110, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
 		chassis.moveToPoint(0, 130, 2000, {false});
 		chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.moveToPoint(-5, 120, 2000, {false});
+		chassis.moveToPoint(-5, 110, 2000, {false}, false);
+		chassis.moveToPoint(-40, 110, 2000, {false}, false);
+		// chassis.turnToHeading(135, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		chassis.moveToPoint(-70, 130, 4000, {false}, false);
+		chassis.turnToHeading(270, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+		chassis.moveToPoint(-40, 130, 4000, {false}, false);
+		chassis.turnToHeading(285, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+		chassis.moveToPoint(10, 110, 4000, {false}, false);
+		chassis.turnToHeading(265, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		chassis.moveToPoint(60, 140, 2000, {false}, false);
+		armMotors.move_absolute(4000, 100);
+		chassis.moveToPoint(-5, 75, 2000, {}, false);
+		chassis.moveToPoint(-10, 70, 2000, {});
+		armMotors.move_absolute(0, 100);
+
+		// chassis.turnToHeading(90, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPoint(-60, 120, 4000, {false}, false);
+		// // clamp.set_value(false);
+		// chassis.moveToPoint(-15, 104, 2000, {false}, false);
+		// chassis.moveToPoint(-25, 90, 2000, {false});
+		// clamp.set_value(true);
+
 	}
 }
 
