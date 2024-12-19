@@ -274,20 +274,29 @@ public:
 	 * @relates checkMotors()
 	 * @returns std::vector containing booleans representing connections statuses of the motors
 	 * @author Leo Abubucker
-	 * @date 12/01/2024
+	 * @date 12/16/2024
 	 */
 	std::vector<bool> isConnected()
 	{
 
 		std::vector<bool> motorConnections;
+		bool isConnected;
 		for (int i = 0; i < motorList.size(); i++)
 		{
-			motorConnections.push_back(motorList[i].is_installed());
-			if (!motorList[i].is_installed())
+			if (motorList[i].get_gearing() != pros::MotorGears::red && motorList[i].get_gearing() != pros::MotorGears::green && motorList[i].get_gearing() != pros::MotorGears::blue)
 			{
-				controller.clear_line(0);
-				controller.set_text(0, 0, motorNamesList[i].c_str());
+				isConnected = false;
 			}
+			else
+			{
+				isConnected = true;
+			}
+			motorConnections.push_back(isConnected);
+			// if (!motorList[i].is_installed())
+			// {
+			// 	controller.clear_line(0);
+			// 	controller.set_text(0, 0, motorNamesList[i].c_str());
+			// }
 		}
 		return motorConnections;
 	}
@@ -399,13 +408,24 @@ public:
 
 	/**
 	 * @brief returns the list of motors
-	 * @relates drawMotorDebugFrame()
+	 * @relates drawMotorDebugFrame(), drawControllerDisplay()
 	 * @author Leo Abubucker
 	 * @date 12/01/2024
 	 */
 	std::vector<pros::Motor> returnMotors()
 	{
 		return motorList;
+	}
+
+	/**
+	 * @brief returns the list of motor names
+	 * @relates drawControllerDisplay()
+	 * @author Leo Abubucker
+	 * @date 12/16/2024
+	 */
+	std::vector<std::string> returnMotorNames()
+	{
+		return motorNamesList;
 	}
 };
 
@@ -826,7 +846,7 @@ void drawModeDisplayFrame()
  * @brief draws the GUI motor debug frame
  * @relates drawGUI(), manuallyDrawGUI()
  * @author Leo Abubucker
- * @date 12/01/2024
+ * @date 12/16/2024
  */
 void drawMotorDebugFrame()
 {
@@ -867,16 +887,10 @@ void drawMotorDebugFrame()
 			{
 			case (0):
 
-				if (motors[i].get_gearing() == pros::MotorGears::red || motors[i].get_gearing() == pros::MotorGears::green || motors[i].get_gearing() == pros::MotorGears::blue)
+				if (motorConnections[i])
 				{
 					pros::screen::set_pen(pros::Color::light_green);
 				}
-				// else if(motors[i].get_gearing() == pros::MotorGears::green){
-				// 	pros::screen::set_pen(pros::Color::gold);
-				// }
-				// else if(motors[i].get_gearing() == pros::MotorGears::blue){
-				// 	pros::screen::set_pen(pros::Color::cyan);
-				// }
 				else
 				{
 					pros::screen::set_pen(pros::Color::red);
@@ -1022,6 +1036,137 @@ void drawTeamFrame()
 }
 
 /**
+ * @brief threaded function that draws the Controller Display every second
+ * @relates initialize()
+ * @author Leo Abubucker
+ * @date 12/17/2024
+ */
+void drawControllerDisplay()
+{
+	controller.clear();
+	int seconds = 0;
+	int minutes = 0;
+	float time = 00.00;
+	int modeIter = 0;
+	int rumbleCount = 0;
+	std::vector<pros::Motor> motors = myMotorCollection.returnMotors();
+	std::vector<std::string> motorNames = myMotorCollection.returnMotorNames();
+	while (true)
+	{
+		std::vector<bool> motorConnections = myMotorCollection.isConnected();
+		// int numMotorsDisconnected = 0;
+		// int numMotorsHot = 0;
+		// int col = 5;
+		std::string dcMotors = "DC: ";
+		for (int i = 0; i < motors.size(); i++)
+		{
+			if (!motorConnections[i])
+			{
+				std::string prn = motorNames[i] + " ";
+				dcMotors += prn;
+				// controller.print(1, col, prn.c_str());
+				// pros::delay(100);
+				// col += 3;
+				// numMotorsDisconnected++;
+			}
+		}
+		controller.print(1, 0, dcMotors.c_str());
+		pros::delay(100);
+		// controller.print(2, 0, "HOT: ");
+		// pros::delay(100);
+		// col = 5;
+		std::string hotMotors = "HOT: ";
+		for (int i = 0; i < motors.size(); i++)
+		{
+			if (motors[i].get_temperature() > 55 && motorConnections[i])
+			{
+				std::string prn = motorNames[i] + " ";
+				hotMotors += prn;
+				// controller.print(2, col, prn.c_str());
+				// pros::delay(100);
+				// col += 3;
+				// numMotorsHot++;
+			}
+		}
+		controller.print(2, 0, hotMotors.c_str());
+		pros::delay(100);
+		if (getCompetitionStatus() == AUTONOMOUS && modeIter != 1)
+		{
+			minutes = 0;
+			seconds = 15;
+			modeIter = 1;
+		}
+		else if (getCompetitionStatus() == USER_CONTROL && modeIter != 2)
+		{
+			minutes = 1;
+			seconds = 45;
+			modeIter = 2;
+		}
+		else if (getCompetitionStatus() == DISABLED || getCompetitionStatus() == PRE_AUTONOMOUS && modeIter != 0)
+		{
+			minutes = 0;
+			seconds = 0;
+			modeIter = 0;
+		}
+		time = minutes + (seconds / 100.00);
+		if (getCompetitionStatus() == DISABLED || getCompetitionStatus() == PRE_AUTONOMOUS && modeIter == 0)
+		{
+			seconds += 1;
+			if (seconds >= 60)
+			{
+				seconds = 0;
+				minutes += 1;
+			}
+		}
+		else if (getCompetitionStatus() == AUTONOMOUS && modeIter == 1)
+		{
+			if (time >= 0.01)
+			{
+				seconds -= 1;
+			}
+			else
+			{
+				seconds = 0;
+				minutes = 0;
+			}
+		}
+		else if (getCompetitionStatus() == USER_CONTROL && modeIter == 2)
+		{
+			if (time >= 0.01)
+			{
+				seconds -= 1;
+				if (seconds <= 0)
+				{
+					seconds = 59;
+					minutes -= 1;
+				}
+			}
+			else
+			{
+				seconds = 0;
+				minutes = 0;
+			}
+			if (time <= 0.20 && rumbleCount == 0)
+			{
+				controller.rumble("...");
+				rumbleCount = 1;
+			}
+			else if (time <= 0.15 && rumbleCount == 1)
+			{
+				controller.rumble("---");
+				rumbleCount = 2;
+			}
+		}
+		controller.print(0, 0, "%05.2f", time);
+		int delay = 800;
+		if (delay >= 0)
+		{
+			pros::delay(delay);
+		}
+	}
+}
+
+/**
  * @brief Threaded function that calls the seven individual drawing functions to draw the entire GUI every 5 seconds
  * @relates initialize()
  * @author Leo Abubucker
@@ -1084,7 +1229,7 @@ void autonSelection()
 		// Checks if the user presses the physical auton selection bumper
 		if (autonSelectionBumper.get_value() == 1)
 		{
-			if (autonSelector < 2)
+			if (autonSelector < 4)
 			{
 				autonSelector++;
 			}
@@ -1130,80 +1275,80 @@ void motorTracking()
  */
 void timeTracking()
 {
-	int timeCheck = 0;
-	int time = 0;
-	bool isH2H = false;
+	// int timeCheck = 0;
+	// int time = 0;
+	// bool isH2H = false;
 
-	while (true)
-	{
-		if (pros::competition::is_autonomous && !isH2H)
-		{
-			isH2H = true;
-		}
-		else if (pros::competition::is_field_control && isH2H)
-		{
-			controller.print(0, 0, "User Control - H2H");
-			while (pros::competition::is_field_control)
-			{
-				time++;
-				// Time update on controller at 1 minute, 30 seconds, and 10 seconds
-				if (time >= 45 && timeCheck == 0)
-				{
-					controller.clear_line(0);
-					controller.rumble(".");
-					controller.print(0, 0, "1 Minute Remaining");
-					timeCheck++;
-				}
-				else if (time >= 75 && timeCheck == 1)
-				{
-					controller.clear_line(0);
-					controller.rumble(". .");
-					controller.print(0, 0, "30 Seconds Remaining");
-					timeCheck++;
-				}
-				else if (time >= 95 && timeCheck == 2)
-				{
-					controller.clear_line(0);
-					controller.rumble(". . .");
-					controller.print(0, 0, "10 Seconds Remaining");
-					timeCheck++;
-				}
-				pros::delay(1000);
-			}
-		}
-		else if (pros::competition::is_field_control && !isH2H)
-		{
-			controller.print(0, 0, "User Control - Skills");
-			while (pros::competition::is_field_control)
-			{
-				time++;
-				// Time update on controller at 45 seconds, 30 seconds, and 15 seconds
-				if (time >= 15 && timeCheck == 0)
-				{
-					controller.clear_line(0);
-					controller.rumble(".");
-					controller.print(0, 0, "45 Seconds Remaining");
-					timeCheck++;
-				}
-				else if (time >= 30 && timeCheck == 1)
-				{
-					controller.clear_line(0);
-					controller.rumble(". .");
-					controller.print(0, 0, "30 Seconds Remaining");
-					timeCheck++;
-				}
-				else if (time >= 45 && timeCheck == 2)
-				{
-					controller.clear_line(0);
-					controller.rumble(". . .");
-					controller.print(0, 0, "15 Seconds Remaining");
-					timeCheck++;
-				}
-				pros::delay(1000);
-			}
-		}
-		pros::delay(1000);
-	}
+	// while (true)
+	// {
+	// 	if (pros::competition::is_autonomous && !isH2H)
+	// 	{
+	// 		isH2H = true;
+	// 	}
+	// 	else if (pros::competition::is_field_control && isH2H)
+	// 	{
+	// 		controller.print(0, 0, "User Control - H2H");
+	// 		while (pros::competition::is_field_control)
+	// 		{
+	// 			time++;
+	// 			// Time update on controller at 1 minute, 30 seconds, and 10 seconds
+	// 			if (time >= 45 && timeCheck == 0)
+	// 			{
+	// 				controller.clear_line(0);
+	// 				controller.rumble(".");
+	// 				controller.print(0, 0, "1 Minute Remaining");
+	// 				timeCheck++;
+	// 			}
+	// 			else if (time >= 75 && timeCheck == 1)
+	// 			{
+	// 				controller.clear_line(0);
+	// 				controller.rumble(". .");
+	// 				controller.print(0, 0, "30 Seconds Remaining");
+	// 				timeCheck++;
+	// 			}
+	// 			else if (time >= 95 && timeCheck == 2)
+	// 			{
+	// 				controller.clear_line(0);
+	// 				controller.rumble(". . .");
+	// 				controller.print(0, 0, "10 Seconds Remaining");
+	// 				timeCheck++;
+	// 			}
+	// 			pros::delay(1000);
+	// 		}
+	// 	}
+	// 	else if (pros::competition::is_field_control && !isH2H)
+	// 	{
+	// 		controller.print(0, 0, "User Control - Skills");
+	// 		while (pros::competition::is_field_control)
+	// 		{
+	// 			time++;
+	// 			// Time update on controller at 45 seconds, 30 seconds, and 15 seconds
+	// 			if (time >= 15 && timeCheck == 0)
+	// 			{
+	// 				controller.clear_line(0);
+	// 				controller.rumble(".");
+	// 				controller.print(0, 0, "45 Seconds Remaining");
+	// 				timeCheck++;
+	// 			}
+	// 			else if (time >= 30 && timeCheck == 1)
+	// 			{
+	// 				controller.clear_line(0);
+	// 				controller.rumble(". .");
+	// 				controller.print(0, 0, "30 Seconds Remaining");
+	// 				timeCheck++;
+	// 			}
+	// 			else if (time >= 45 && timeCheck == 2)
+	// 			{
+	// 				controller.clear_line(0);
+	// 				controller.rumble(". . .");
+	// 				controller.print(0, 0, "15 Seconds Remaining");
+	// 				timeCheck++;
+	// 			}
+	// 			pros::delay(1000);
+	// 		}
+	// 	}
+	// 	pros::delay(1000);
+	// }
 }
 
 /*------------------------------------------------------------------------------------*/
@@ -1226,10 +1371,12 @@ void timeTracking()
  * @details All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  * @author Leo Abubucker
- * @date 12/01/2024
+ * @date 12/17/2024
  */
 void initialize()
 {
+	pros::Task controllerDisplayTask(drawControllerDisplay);
+
 	// MotorCollection Initialization
 	myMotorCollection.addMotor(rightArm, "LA");
 	myMotorCollection.addMotor(leftArm, "RA");
@@ -1293,10 +1440,9 @@ void competition_initialize() {}
  */
 void autonomous()
 {
-	if (autonSelector == 0)
+	if (autonSelector == 1)
 	{
-		// chassis.turnToHeading(180, 2000);
-
+		// Either Side 1 Ring
 		chassis.moveToPoint(0, 25, 4000, {});
 		armMotors.move_absolute(2400, 100);
 		chassis.moveToPoint(0, 35, 4000, {}, false);
@@ -1304,32 +1450,37 @@ void autonomous()
 		intakeMotors.move_relative(1500, 80);
 		pros::delay(1000);
 		chassis.moveToPoint(0, 19, 4000, {false}, false);
-		// chassis.turnToHeading(205, 2000);
-		// armMotors.move_absolute(0, 100);
-		// chassis.moveToPoint(-15, 30, 4000, {});
-		
-		// chassis.moveToPoint(-25, 40, 4000, {});
-		// intakeMotors.move_relative(-1500, 100);
-		// chassis.moveToPoint(0, 0, 4000, {false}, false);
-		// chassis.turnToHeading(250, 3000, {AngularDirection::CCW_COUNTERCLOCKWISE});
-		// armMotors.move_absolute(2600, 100);
-		// chassis.moveToPoint(-13, 0, 4000, {}, false);
-		// chassis.turnToHeading(210, 3000, {AngularDirection::CCW_COUNTERCLOCKWISE});
-		// chassis.moveToPoint(-20, -10, 2000, {}, false);
-		// intakeMotors.move_relative(3000, 100);
-		// pros::delay(300);
-		// armMotors.move_absolute(1700, 100);
-		// pros::delay(1000);
-		// chassis.moveToPoint(-10, 0, 2000, {false}, false);
-		// chassis.moveToPoint(-20, 5, 2000, {});
-		// armMotors.move_absolute(0, 100);
-
-		// clamp.set_value(true);
-		// chassis.moveToPoint(5, 30, 4000);
-		// chassis.turnToHeading(90, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
 	}
-	else if (autonSelector == 1)
+	else if (autonSelector == 0)
 	{
+		// Right Side 2 Ring
+		chassis.turnToHeading(180, 2000);
+		chassis.moveToPoint(6, 30, 4000, {.forwards = false}, false);
+		clamp.set_value(true);
+		intakeMotors.move_relative(-3500, 200);
+		pros::delay(1000);
+		// chassis.turnToHeading(90, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		chassis.moveToPose(15, 31, 90, 2000, {}, false);
+		intakeMotors.move_relative(3500, 200);
+		chassis.moveToPoint(24, 31, 2000, {}, false);
+		// chassis.moveToPose(-24, 24, 90, 3000);
+	}
+	else if (autonSelector == 2)
+	{
+		// Lett Side 2 Ring
+		chassis.turnToHeading(180, 2000);
+		chassis.moveToPoint(0, 24, 2000, {.forwards = false, .maxSpeed = 50}, true);
+		clamp.set_value(true);
+		chassis.turnToHeading(270, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		chassis.moveToPoint(-15, 24, 2000, {}, false);
+		intakeMotors.move_relative(-1500, 100);
+		chassis.moveToPoint(-24, 24, 2000, {}, false);
+		intakeMotors.move_relative(1500, 100);
+		chassis.moveToPose(24, 24, 270, 3000);
+	}
+	else if (autonSelector == 3)
+	{
+		// 23pt Auton Skills
 		clamp.set_value(true);
 		chassis.moveToPoint(0, 11, 2000, {}, false);
 		chassis.turnToHeading(90, 2000);
@@ -1341,10 +1492,6 @@ void autonomous()
 		chassis.moveToPoint(70, -15, 4000, {false});
 		chassis.moveToPoint(50, 10, 2000);
 		chassis.turnToHeading(45, 2000);
-		// chassis.moveToPoint(30, 30, 3000);
-		// armMotors.move_absolute(4500, 100);
-		// chassis.moveToPoint(20, 40, 2000);
-
 		chassis.moveToPoint(50, 110, 2000);
 		chassis.turnToHeading(300, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
 		chassis.turnToHeading(110, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
@@ -1352,26 +1499,17 @@ void autonomous()
 		chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
 		chassis.moveToPoint(-5, 110, 2000, {false}, false);
 		chassis.moveToPoint(-40, 110, 2000, {false}, false);
-		// chassis.turnToHeading(135, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.moveToPoint(-70, 130, 4000, {false}, false);
+		chassis.moveToPoint(-70, 150, 4000, {false}, false);
 		chassis.turnToHeading(270, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
 		chassis.moveToPoint(-40, 130, 4000, {false}, false);
 		chassis.turnToHeading(285, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
 		chassis.moveToPoint(10, 110, 4000, {false}, false);
 		chassis.turnToHeading(265, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.moveToPoint(60, 140, 2000, {false}, false);
+		chassis.moveToPoint(70, 150, 2000, {false}, false);
 		armMotors.move_absolute(4000, 100);
 		chassis.moveToPoint(-5, 75, 2000, {}, false);
 		chassis.moveToPoint(-10, 70, 2000, {});
 		armMotors.move_absolute(0, 100);
-
-		// chassis.turnToHeading(90, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-		// chassis.moveToPoint(-60, 120, 4000, {false}, false);
-		// // clamp.set_value(false);
-		// chassis.moveToPoint(-15, 104, 2000, {false}, false);
-		// chassis.moveToPoint(-25, 90, 2000, {false});
-		// clamp.set_value(true);
-
 	}
 }
 
@@ -1391,7 +1529,7 @@ void opcontrol()
 {
 	bool clampState = false;
 	bool clampLastState = false;
-	pros::Task timeTrackingTask(timeTracking);
+	// pros::Task timeTrackingTask(timeTracking);
 
 	while (true)
 	{ // Run for 20 ms then update
