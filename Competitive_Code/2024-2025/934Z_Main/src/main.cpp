@@ -63,10 +63,10 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 // Motors
 pros::Motor rightArm(1, pros::MotorGearset::red);
 pros::Motor leftArm(-9, pros::MotorGearset::red);
-pros::Motor leftBack(-11, pros::MotorGearset::green);
-pros::Motor leftFront(-15, pros::MotorGearset::green);
-pros::Motor rightBack(13, pros::MotorGearset::green);
-pros::Motor rightFront(15, pros::MotorGearset::green);
+pros::Motor leftBack(-11, pros::MotorGearset::blue);
+pros::Motor leftFront(-15, pros::MotorGearset::blue);
+pros::Motor rightBack(13, pros::MotorGearset::blue);
+pros::Motor rightFront(15, pros::MotorGearset::blue);
 pros::Motor leftIntake(-10, pros::MotorGearset::green);
 pros::Motor rightIntake(2, pros::MotorGearset::green);
 
@@ -74,8 +74,8 @@ pros::Motor rightIntake(2, pros::MotorGearset::green);
 pros::MotorGroup allMotors({-15, -11, 14, 13, -10, 2, -9, 1});
 
 pros::MotorGroup leftMotors({-15, -11},
-							pros::MotorGearset::green);			   // left motor group - ports 3 (reversed), 4, 5 (reversed)
-pros::MotorGroup rightMotors({14, 13}, pros::MotorGearset::green); // right motor group - ports 6, 7, 9 (reversed)
+							pros::MotorGearset::blue);			   // left motor group - ports 3 (reversed), 4, 5 (reversed)
+pros::MotorGroup rightMotors({14, 13}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 
 pros::MotorGroup intakeMotors({-10, 2}, pros::MotorGearset::green);
 
@@ -88,7 +88,7 @@ pros::Imu imu(20);
 pros::adi::DigitalOut clamp(1);
 
 // Auton Selection Bumper
-pros::adi::DigitalIn autonSelectionBumper(5);
+pros::adi::DigitalIn autonSelectionBumper(6);
 
 // Auton Confirmation Bumper
 pros::adi::DigitalIn autonConfirmationBumper(3);
@@ -1004,7 +1004,7 @@ void drawControllerInfoFrame()
 	}
 	else
 	{
-		pros::screen::print(pros::E_TEXT_MEDIUM, 300, 220, "DISCONNECTED");
+		pros::screen::print(pros::E_TEXT_MEDIUM, 298, 220, "DISCONNECTED");
 	}
 
 	pros::screen::set_pen(pros::Color::white);
@@ -1039,7 +1039,7 @@ void drawTeamFrame()
  * @brief threaded function that draws the Controller Display every second
  * @relates initialize()
  * @author Leo Abubucker
- * @date 12/17/2024
+ * @date 1/6/2025
  */
 void drawControllerDisplay()
 {
@@ -1053,10 +1053,10 @@ void drawControllerDisplay()
 	std::vector<std::string> motorNames = myMotorCollection.returnMotorNames();
 	while (true)
 	{
+		// Determines and prints disconnected motors
+	
 		std::vector<bool> motorConnections = myMotorCollection.isConnected();
-		// int numMotorsDisconnected = 0;
-		// int numMotorsHot = 0;
-		// int col = 5;
+
 		std::string dcMotors = "DC: ";
 		for (int i = 0; i < motors.size(); i++)
 		{
@@ -1064,17 +1064,13 @@ void drawControllerDisplay()
 			{
 				std::string prn = motorNames[i] + " ";
 				dcMotors += prn;
-				// controller.print(1, col, prn.c_str());
-				// pros::delay(100);
-				// col += 3;
-				// numMotorsDisconnected++;
 			}
 		}
 		controller.print(1, 0, dcMotors.c_str());
 		pros::delay(100);
-		// controller.print(2, 0, "HOT: ");
-		// pros::delay(100);
-		// col = 5;
+
+		// Determines and prints hot motors
+
 		std::string hotMotors = "HOT: ";
 		for (int i = 0; i < motors.size(); i++)
 		{
@@ -1082,26 +1078,30 @@ void drawControllerDisplay()
 			{
 				std::string prn = motorNames[i] + " ";
 				hotMotors += prn;
-				// controller.print(2, col, prn.c_str());
-				// pros::delay(100);
-				// col += 3;
-				// numMotorsHot++;
 			}
 		}
 		controller.print(2, 0, hotMotors.c_str());
 		pros::delay(100);
+
+		// Sets the timer based on the given game mode
+
+		// Timer starts at 15sec for auton
 		if (getCompetitionStatus() == AUTONOMOUS && modeIter != 1)
 		{
 			minutes = 0;
 			seconds = 15;
 			modeIter = 1;
 		}
+
+		// Timer starts at 1m45sec for user control
 		else if (getCompetitionStatus() == USER_CONTROL && modeIter != 2)
 		{
 			minutes = 1;
 			seconds = 45;
 			modeIter = 2;
 		}
+
+		// Timer starts at 0 for pre-autonomous
 		else if (getCompetitionStatus() == DISABLED || getCompetitionStatus() == PRE_AUTONOMOUS && modeIter != 0)
 		{
 			minutes = 0;
@@ -1109,6 +1109,7 @@ void drawControllerDisplay()
 			modeIter = 0;
 		}
 		time = minutes + (seconds / 100.00);
+		// Counts up for pre-autonomous, converting 60 seconds to 1 minute
 		if (getCompetitionStatus() == DISABLED || getCompetitionStatus() == PRE_AUTONOMOUS && modeIter == 0)
 		{
 			seconds += 1;
@@ -1118,6 +1119,8 @@ void drawControllerDisplay()
 				minutes += 1;
 			}
 		}
+
+		// Counts down for autonomous
 		else if (getCompetitionStatus() == AUTONOMOUS && modeIter == 1)
 		{
 			if (time >= 0.01)
@@ -1130,6 +1133,8 @@ void drawControllerDisplay()
 				minutes = 0;
 			}
 		}
+
+		// Counts down for user control, converting 0 seconds to 1 minute
 		else if (getCompetitionStatus() == USER_CONTROL && modeIter == 2)
 		{
 			if (time >= 0.01)
@@ -1146,11 +1151,15 @@ void drawControllerDisplay()
 				seconds = 0;
 				minutes = 0;
 			}
+
+			// Short rumble at 20 seconds
 			if (time <= 0.20 && rumbleCount == 0)
 			{
 				controller.rumble("...");
 				rumbleCount = 1;
 			}
+
+			// Long rumble at 15 seconds
 			else if (time <= 0.15 && rumbleCount == 1)
 			{
 				controller.rumble("---");
@@ -1158,11 +1167,13 @@ void drawControllerDisplay()
 			}
 		}
 		controller.print(0, 0, "%05.2f", time);
-		int delay = 800;
-		if (delay >= 0)
-		{
-			pros::delay(delay);
-		}
+
+		// Staggered delay to clear the lines and give a function total of 1 second (1000ms) of delay to ensure timer remains accurate
+		pros::delay(600);
+		controller.clear_line(1);
+		pros::delay(100);
+		controller.clear_line(2);
+		pros::delay(100);
 	}
 }
 
@@ -1371,7 +1382,7 @@ void timeTracking()
  * @details All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  * @author Leo Abubucker
- * @date 12/17/2024
+ * @date 1/6/2025
  */
 void initialize()
 {
@@ -1436,7 +1447,7 @@ void competition_initialize() {}
  * stopped. Re-enabling the robot will restart the task, not re-start it from where
  * it left off.
  * @author Leo Abubucker
- * @date 12/01/2024
+ * @date 1/9/2025
  */
 void autonomous()
 {
@@ -1455,14 +1466,21 @@ void autonomous()
 	{
 		// Right Side 2 Ring
 		chassis.turnToHeading(180, 2000);
-		chassis.moveToPoint(6, 30, 4000, {.forwards = false}, false);
+		chassis.moveToPoint(6, 37, 4000, {.forwards = false}, false);
 		clamp.set_value(true);
-		intakeMotors.move_relative(-3500, 200);
-		pros::delay(1000);
+		// chassis.moveToPose(6, 0, 9 0, 4000, {}, false);
+		chassis.moveToPose(15, 28, 90, 2000, {}, false);
+				intakeMotors.move_relative(-10000, 100);
+		chassis.moveToPoint(24, 28, 2000, {}, true);
+		chassis.moveToPoint(-10, 30, 4000, {.forwards = false}, false);
+		intakeMotors.move_relative(-10000, 100);
 		// chassis.turnToHeading(90, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.moveToPose(15, 31, 90, 2000, {}, false);
-		intakeMotors.move_relative(3500, 200);
-		chassis.moveToPoint(24, 31, 2000, {}, false);
+		// intakeMotors.move_relative(-3500, 200);
+		// pros::delay(1000);
+		// // chassis.turnToHeading(90, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPose(15, 31, 90, 2000, {}, false);
+		// intakeMotors.move_relative(3500, 200);
+		// chassis.moveToPoint(24, 31, 2000, {}, false);
 		// chassis.moveToPose(-24, 24, 90, 3000);
 	}
 	else if (autonSelector == 2)
@@ -1480,36 +1498,108 @@ void autonomous()
 	}
 	else if (autonSelector == 3)
 	{
+		
+		
+	// chassis.moveToPoint(0, 9, 2000);
+	// chassis.turnToHeading(90, 2000);
+	// chassis.moveToPoint(-40, 9, 4000, {false});
+	// chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+	// chassis.moveToPoint(-60, 0, 4000, {false});
+	// chassis.moveToPoint(10, 22, 4000);
+	// chassis.turnToHeading(290, 2000);
+	// chassis.moveToPoint(70, -10, 4000, {false});
+	// chassis.moveToPoint(50, 10, 2000);
+	// chassis.moveToPoint(50, 110, 2000);
+	// chassis.turnToHeading(300, 2000, {.direction=AngularDirection::CCW_COUNTERCLOCKWISE});
+	// chassis.turnToHeading(125, 2000, {.direction=AngularDirection::CW_CLOCKWISE});
 		// 23pt Auton Skills
+		//1
 		clamp.set_value(true);
 		chassis.moveToPoint(0, 11, 2000, {}, false);
 		chassis.turnToHeading(90, 2000);
 		chassis.moveToPoint(-40, 11, 4000, {false}, false);
 		chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
 		chassis.moveToPoint(-60, -10, 4000, {false}, false);
-		chassis.moveToPoint(10, 22, 4000);
-		chassis.turnToHeading(290, 2000);
-		chassis.moveToPoint(70, -15, 4000, {false});
-		chassis.moveToPoint(50, 10, 2000);
-		chassis.turnToHeading(45, 2000);
-		chassis.moveToPoint(50, 110, 2000);
-		chassis.turnToHeading(300, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.turnToHeading(110, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
-		chassis.moveToPoint(0, 130, 2000, {false});
-		chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.moveToPoint(-5, 110, 2000, {false}, false);
-		chassis.moveToPoint(-40, 110, 2000, {false}, false);
-		chassis.moveToPoint(-70, 150, 4000, {false}, false);
-		chassis.turnToHeading(270, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
-		chassis.moveToPoint(-40, 130, 4000, {false}, false);
-		chassis.turnToHeading(285, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
-		chassis.moveToPoint(10, 110, 4000, {false}, false);
-		chassis.turnToHeading(265, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.moveToPoint(70, 150, 2000, {false}, false);
-		armMotors.move_absolute(4000, 100);
-		chassis.moveToPoint(-5, 75, 2000, {}, false);
-		chassis.moveToPoint(-10, 70, 2000, {});
-		armMotors.move_absolute(0, 100);
+
+		//2
+		chassis.moveToPoint(0, 11, 2000, {}, false);
+		chassis.turnToHeading(270, 2000);
+		chassis.moveToPoint(40, 11, 4000, {false}, false);
+		chassis.turnToHeading(305, 2000, {AngularDirection::CW_CLOCKWISE});
+		chassis.moveToPoint(60, -10, 4000, {false}, false);
+
+		//3
+		chassis.moveToPose(20, 80, 315, 4000, {}, true);
+		
+		// chassis.turnToHeading(65, 2000);
+		// chassis.moveToPoint(-20, 110, 4000, {}, true);
+		// chassis.turnToHeading(270, 2000, {AngularDirection::CW_CLOCKWISE});
+		// chassis.moveToPoint(-70, 120, 4000, {}, true);
+
+		// chassis.moveToPoint(6, 22, 4000);
+		// chassis.turnToHeading(290, 2000);
+		// chassis.moveToPoint(70, -15, 4000, {false});
+		// chassis.moveToPoint(50, 10, 2000);
+		// chassis.turnToHeading(45, 2000);
+		// chassis.moveToPoint(50, 110, 2000);
+		// chassis.turnToHeading(300, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.turnToHeading(110, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+		// chassis.moveToPoint(0, 130, 2000, {false});
+		// chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPoint(-5, 110, 2000, {false}, false);
+		// chassis.moveToPoint(-40, 110, 2000, {false}, false);
+		// chassis.moveToPoint(-70, 150, 4000, {false}, false);
+		// chassis.turnToHeading(270, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+		// chassis.moveToPoint(-40, 130, 4000, {false}, false);
+		// chassis.turnToHeading(285, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+		// chassis.moveToPoint(10, 110, 4000, {false}, false);
+		// chassis.turnToHeading(265, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPoint(70, 150, 2000, {false}, false);
+		// armMotors.move_absolute(4000, 100);
+		// chassis.moveToPoint(-5, 75, 2000, {}, false);
+		// chassis.moveToPoint(-10, 70, 2000, {});
+		// armMotors.move_absolute(0, 100);
+
+	// //1st goal new
+	// 	clamp.set_value(true);
+	// 			chassis.moveToPoint(0, 11, 2000, {}, false);
+	// 	chassis.turnToHeading(90, 2000);
+	// 	chassis.moveToPoint(-40, 11, 4000, {false}, false);
+	// 	chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+	// 	chassis.moveToPoint(-60, -10, 4000, {false}, false);
+
+	// //2nd Goal old
+	// 		chassis.moveToPoint(10, 22, 4000);
+	// 	chassis.turnToHeading(290, 2000);
+	// 	chassis.moveToPoint(70, -10, 4000, {false});
+	// 	chassis.moveToPoint(50, 10, 2000);
+	// 	chassis.moveToPoint(50, 110, 2000);
+
+	// //3rd goal new
+	// // clamp.set_value(true);
+	// 	chassis.turnToHeading(300, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+	// 	chassis.turnToHeading(110, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+	// 	chassis.moveToPoint(0, 130, 2000, {false});
+	// 	chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+	// 	chassis.moveToPoint(-5, 110, 2000, {false}, false);
+	// 	chassis.moveToPoint(-40, 110, 2000, {false}, false);
+	// 	chassis.moveToPoint(-70, 150, 4000, {false}, false);
+
+		// chassis.moveToPoint(0, 9, 2000);
+		// chassis.turnToHeading(90, 2000);
+		// chassis.moveToPoint(-40, 9, 4000, {false});
+		// chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPoint(-60, 0, 4000, {false});
+		// chassis.moveToPoint(10, 22, 4000);
+		// chassis.turnToHeading(290, 2000);
+		// chassis.moveToPoint(70, -10, 4000, {false});
+		// chassis.moveToPoint(50, 10, 2000);
+		// chassis.moveToPoint(50, 110, 2000);
+		// chassis.turnToHeading(300, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.turnToHeading(110, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+		// chassis.moveToPoint(0, 130, 2000, {false});
+		// chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPoint(-5, 120, 2000, {false});
 	}
 }
 
@@ -1527,8 +1617,8 @@ void autonomous()
  */
 void opcontrol()
 {
-	bool clampState = false;
-	bool clampLastState = false;
+	bool clampState = true;
+	bool clampLastState = true;
 	// pros::Task timeTrackingTask(timeTracking);
 
 	while (true)
