@@ -1472,7 +1472,7 @@ void autonomous()
 		chassis.moveToPose(15, 28, 90, 2000, {}, false);
 				intakeMotors.move_relative(-10000, 100);
 		chassis.moveToPoint(24, 28, 2000, {}, true);
-		chassis.moveToPoint(-10, 30, 4000, {.forwards = false}, false);
+		chassis.moveToPoint(-20, 30, 4000, {.forwards = false}, false);
 		intakeMotors.move_relative(-10000, 100);
 		// chassis.turnToHeading(90, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
 		// intakeMotors.move_relative(-3500, 200);
@@ -1486,15 +1486,27 @@ void autonomous()
 	else if (autonSelector == 2)
 	{
 		// Lett Side 2 Ring
+		// chassis.turnToHeading(180, 2000);
+		// chassis.moveToPoint(0, 24, 2000, {.forwards = false, .maxSpeed = 50}, true);
+		// clamp.set_value(true);
+		// chassis.turnToHeading(270, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPoint(-15, 24, 2000, {}, false);
+		// intakeMotors.move_relative(-1500, 100);
+		// chassis.moveToPoint(-24, 24, 2000, {}, false);
+		// intakeMotors.move_relative(1500, 100);
+		// chassis.moveToPose(24, 24, 270, 3000);
+		 
 		chassis.turnToHeading(180, 2000);
-		chassis.moveToPoint(0, 24, 2000, {.forwards = false, .maxSpeed = 50}, true);
+		chassis.moveToPoint(0, 37, 4000, {.forwards = false}, false);
 		clamp.set_value(true);
-		chassis.turnToHeading(270, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
-		chassis.moveToPoint(-15, 24, 2000, {}, false);
-		intakeMotors.move_relative(-1500, 100);
-		chassis.moveToPoint(-24, 24, 2000, {}, false);
-		intakeMotors.move_relative(1500, 100);
-		chassis.moveToPose(24, 24, 270, 3000);
+		// chassis.moveToPose(6, 0, 9 0, 4000, {}, false);
+		chassis.moveToPose(-15, 28, 90, 2000, {}, false);
+		intakeMotors.move_relative(-10000, 100);
+		chassis.moveToPoint(-24, 28, 2000, {}, true);
+		chassis.moveToPoint(15, 30, 4000, {.forwards = false}, false);
+		intakeMotors.move_relative(-10000, 100);
+		// pros::delay(1000);
+		// chassis.moveToPoint(30, 30, 4000, {.forwards = false}, false);
 	}
 	else if (autonSelector == 3)
 	{
@@ -1529,7 +1541,11 @@ void autonomous()
 		chassis.moveToPoint(60, -10, 4000, {false}, false);
 
 		//3
-		chassis.moveToPose(20, 80, 315, 4000, {}, true);
+		chassis.moveToPose(10, 30, 315, 4000, {}, true);
+		// chassis.turnToHeading(270, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPoint(-60, 100, 2000, {}, true);
+		// chassis.turnToHeading(315, 2000);
+		// chassis.moveToPoint(-80, 120, 2000, {}, true);
 		
 		// chassis.turnToHeading(65, 2000);
 		// chassis.moveToPoint(-20, 110, 4000, {}, true);
