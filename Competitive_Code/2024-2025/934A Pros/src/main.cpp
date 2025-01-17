@@ -6,7 +6,7 @@ pros::Controller controller (pros::E_CONTROLLER_MASTER);
 
 //motors
 pros::Motor interalIntake(-5, pros::v5::MotorGears::green);
-pros::Motor externalIntake(-6, pros::v5::MotorGears::green);
+pros::Motor externalIntake(6, pros::v5::MotorGears::green);
 pros::MotorGroup rightMotors({3, 4}, pros::v5::MotorGears::green);
 pros::MotorGroup leftMotors({-1, -2}, pros::v5::MotorGears::green);
 
@@ -109,12 +109,74 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
-	/*chassis.setPose(0,0,0);
-	chassis.moveToPoint(0, 20, 5000);
+
+	//head to head auton 1  (3 goal side)
+	chassis.setPose(0,0,0);
+	chassis.moveToPoint(0, -30, 3000, {.forwards = false});
+	pros::delay(1000);
 	clamp.set_value(true);
-	chassis.turnToHeading(180, 3000);
+	interalIntake.move(80);
+	pros::delay(2000);
+	//interalIntake.move(0);
+	//chassis.moveToPoint(0, -5, 1000, {.forwards = false});
+	chassis.turnToHeading(90, 2000);
+	externalIntake.move(110);
+	chassis.moveToPoint(0, 26, 2000, {.forwards = true});
+	pros::delay(2000);
+	chassis.moveToPoint(/*test negative*/-26, -26, 2000, {.forwards = false});
+	interalIntake.move(0);
+	externalIntake.move(0);
+
+	//head to head auton 2 (2 goal side)
+	chassis.setPose(0,0,0);
+	chassis.moveToPoint(0, -30, 3000, {.forwards = false});
+	pros::delay(1000);
+	clamp.set_value(true);
+	interalIntake.move(80);
+	pros::delay(2000);
+	//interalIntake.move(0);
+	//chassis.moveToPoint(0, -5, 1000, {.forwards = false});
+	chassis.turnToHeading(-90, 2000);
+	chassis.moveToPoint(0, 26, 2000, {.forwards = true});
+	externalIntake.move(110);
+	pros::delay(2000);
+	interalIntake.move(0);
+	externalIntake.move(0);
+	chassis.moveToPoint(-26, /*test negative*/-48, 2000, {.forwards = false});
+	chassis.moveToPoint(0, 20, 2000, {.forwards = false});
+
+	// programming skills auton 
+	chassis.setPose(0,0,0);
+	chassis.moveToPoint(0, -8, 3000, {.forwards = false});
+	clamp.set_value(true);
+	chassis.turnToHeading(180, 2000);
+	interalIntake.move(80);
+	externalIntake.move(110);
+	chassis.moveToPoint(0, 24, 3000, {.forwards = true});
+	chassis.turnToHeading(90, 2000);
+	chassis.moveToPoint(0, 24, 3000, {.forwards = true});
+	chassis.turnToHeading(90, 2000);
+	chassis.moveToPoint(0, 36, 3000, {.forwards = true});
+	//test
+	chassis.moveToPoint(12, -12, 2000, {.forwards = true});
+	chassis.moveToPoint(12, -24, 2000, {.forwards = false});
 	clamp.set_value(false);
-	chassis.moveToPoint(0, -20, 5000);*/
+	//end of left side; move to next goal
+	chassis.moveToPoint(/*test*/-24, 96, 5000, {.forwards = false});
+	clamp.set_value(true);
+	chassis.turnToHeading(-90, 2000);
+	chassis.moveToPoint(0, 24, 3000, {.forwards = true});
+	chassis.turnToHeading(-90, 2000);
+	chassis.moveToPoint(0, 24, 3000, {.forwards = true});
+	chassis.turnToHeading(-90, 2000);
+	chassis.moveToPoint(0, 36, 3000, {.forwards = true});
+	//test
+	chassis.moveToPoint(12, -12, 2000, {.forwards = true});
+	chassis.moveToPoint(12, -24, 2000, {.forwards = false});
+	interalIntake.move(0);
+	externalIntake.move(0);
+	//end of right side
+
 }
 
 /**
@@ -126,7 +188,7 @@ void autonomous() {
  * If no competition control is connected, this function will run immediately
  * following initialize().
  *
- * If the robot is disabled or communications is lost, the
+ * If the robot is disabledmunications is lost, the
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
@@ -152,11 +214,11 @@ void opcontrol() {
 		*/
 		if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)||controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)){
 			interalIntake.move(80);
-			externalIntake.move(-110);
+			externalIntake.move(110);
 		}else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) || controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
 		{
 			interalIntake.move(-80);
-			externalIntake.move(110);
+			externalIntake.move(-110);
 		}else{
 			interalIntake.move(0);
 			externalIntake.move(0);
