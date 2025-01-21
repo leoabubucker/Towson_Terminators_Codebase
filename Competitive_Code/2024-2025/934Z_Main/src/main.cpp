@@ -1453,6 +1453,22 @@ void autonomous()
 {
 	if (autonSelector == 1)
 	{
+		// 1
+		chassis.turnToHeading(180, 2000);
+		chassis.moveToPoint(-2, 37, 4000, {.forwards = false}, false);
+		clamp.set_value(true);
+		intakeMotors.move_relative(-10000, 105);
+
+		// 2
+		chassis.moveToPose(15, 28, 90, 2000, {}, true);
+		chassis.moveToPoint(24, 28, 2000, {}, true);
+		chassis.moveToPoint(-15, 25, 4000, {.forwards = false}, false);
+
+		//Goal
+		chassis.moveToPose(0, 50, 0, 4000, {}, false);
+	}
+	else if (autonSelector == 2)
+	{
 		// Either Side 1 Ring
 		chassis.moveToPoint(0, 25, 4000, {});
 		armMotors.move_absolute(2400, 100);
@@ -1461,19 +1477,17 @@ void autonomous()
 		intakeMotors.move_relative(1500, 80);
 		pros::delay(1000);
 		chassis.moveToPoint(0, 19, 4000, {false}, false);
-	}
-	else if (autonSelector == 0)
-	{
+
 		// Right Side 2 Ring
-		chassis.turnToHeading(180, 2000);
-		chassis.moveToPoint(6, 37, 4000, {.forwards = false}, false);
-		clamp.set_value(true);
-		// chassis.moveToPose(6, 0, 9 0, 4000, {}, false);
-		chassis.moveToPose(15, 28, 90, 2000, {}, false);
-				intakeMotors.move_relative(-10000, 100);
-		chassis.moveToPoint(24, 28, 2000, {}, true);
-		chassis.moveToPoint(-20, 30, 4000, {.forwards = false}, false);
-		intakeMotors.move_relative(-10000, 100);
+		// chassis.turnToHeading(180, 2000);
+		// chassis.moveToPoint(6, 37, 4000, {.forwards = false}, false);
+		// clamp.set_value(true);
+		// // chassis.moveToPose(6, 0, 9 0, 4000, {}, false);
+		// chassis.moveToPose(15, 28, 90, 2000, {}, false);
+		// 		intakeMotors.move_relative(-10000, 100);
+		// chassis.moveToPoint(24, 28, 2000, {}, true);
+		// chassis.moveToPoint(-20, 30, 4000, {.forwards = false}, false);
+		// intakeMotors.move_relative(-10000, 100);
 		// chassis.turnToHeading(90, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
 		// intakeMotors.move_relative(-3500, 200);
 		// pros::delay(1000);
@@ -1483,7 +1497,7 @@ void autonomous()
 		// chassis.moveToPoint(24, 31, 2000, {}, false);
 		// chassis.moveToPose(-24, 24, 90, 3000);
 	}
-	else if (autonSelector == 2)
+	else if (autonSelector == 0)
 	{
 		// Lett Side 2 Ring
 		// chassis.turnToHeading(180, 2000);
@@ -1495,18 +1509,22 @@ void autonomous()
 		// chassis.moveToPoint(-24, 24, 2000, {}, false);
 		// intakeMotors.move_relative(1500, 100);
 		// chassis.moveToPose(24, 24, 270, 3000);
-		 
+		 // 1
 		chassis.turnToHeading(180, 2000);
-		chassis.moveToPoint(0, 37, 4000, {.forwards = false}, false);
+		chassis.moveToPoint(2, 37, 4000, {.forwards = false}, false);
 		clamp.set_value(true);
-		// chassis.moveToPose(6, 0, 9 0, 4000, {}, false);
-		chassis.moveToPose(-15, 28, 90, 2000, {}, false);
-		intakeMotors.move_relative(-10000, 100);
+		intakeMotors.move_relative(-10000, 105);
+
+		// 2
+		chassis.moveToPose(-15, 28, 270, 2000, {}, true);
 		chassis.moveToPoint(-24, 28, 2000, {}, true);
-		chassis.moveToPoint(15, 30, 4000, {.forwards = false}, false);
-		intakeMotors.move_relative(-10000, 100);
-		// pros::delay(1000);
-		// chassis.moveToPoint(30, 30, 4000, {.forwards = false}, false);
+		chassis.moveToPoint(15, 25, 4000, {.forwards = false}, false);
+
+		//Goal
+		chassis.moveToPose(0, 50, 0, 4000, {}, false);
+		// // intakeMotors.move_relative(-100000, 100);
+		// chassis.turnToHeading(135, 2000);
+		// chassis.moveToPoint(26, -5, 2000, {}, true);
 	}
 	else if (autonSelector == 3)
 	{
@@ -1646,11 +1664,11 @@ void opcontrol()
 
 		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1))
 		{
-			intakeMotors.move_velocity(-200);
+			intakeMotors.move_velocity(-185);
 		}
 		else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
 		{
-			intakeMotors.move_velocity(200);
+			intakeMotors.move_velocity(185);
 		}
 		else
 		{
