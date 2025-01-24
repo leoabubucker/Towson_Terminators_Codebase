@@ -7,7 +7,7 @@ pros::Controller controller (pros::E_CONTROLLER_MASTER);
 //motors
 pros::Motor interalIntake(-5, pros::v5::MotorGears::green);
 pros::Motor externalIntake(6, pros::v5::MotorGears::green);
-pros::MotorGroup rightMotors({3, 4}, pros::v5::MotorGears::green);
+pros::MotorGroup rightMotors({3, 11}, pros::v5::MotorGears::green);
 pros::MotorGroup leftMotors({-1, -2}, pros::v5::MotorGears::green);
 
 //inertial sensor (port 10)
@@ -113,12 +113,13 @@ void autonomous() {
 	//head to head auton 1  (3 goal side)
 	chassis.setPose(0,0,0);
 	clamp.set_value(true);
-	chassis.moveToPoint(0, -30, 3000, {.forwards = false});
+	chassis.moveToPoint(0, -26, 3000, {.forwards = false});
 	pros::delay(500);
 	clamp.set_value(false);
 	pros::delay(1000);
-	chassis.moveToPoint(0, 10, 3000, {.forwards = true});
 	interalIntake.move(127);
+	chassis.turnToHeading(-90);
+	chassis.moveToPoint(-24, -26, 3000, {.forwards = true});
 	pros::delay(3000);
 	interalIntake.move(0);
 	
@@ -152,35 +153,42 @@ void autonomous() {
 	//chassis.moveToPoint(0, 20, 2000, {.forwards = false});
 
 	// programming skills auton 
-	//chassis.setPose(0,0,0);
-	//chassis.moveToPoint(0, -8, 3000, {.forwards = false});
-	//clamp.set_value(true);
-	//chassis.turnToHeading(180, 2000);
-	//interalIntake.move(80);
-	//externalIntake.move(110);
-	//chassis.moveToPoint(0, 24, 3000, {.forwards = true});
-	//chassis.turnToHeading(90, 2000);
-	//chassis.moveToPoint(0, 24, 3000, {.forwards = true});
-	//chassis.turnToHeading(90, 2000);
-	//chassis.moveToPoint(0, 36, 3000, {.forwards = true});
+	chassis.setPose(0,0,0);
+	clamp.set_value(true);
+	chassis.moveToPoint(0, -2, 3000, {.forwards = false});
+	pros::delay(1000);
+	clamp.set_value(false);
+	chassis.turnToHeading(180, 2000);
+	interalIntake.move(127);
+	externalIntake.move(127);
+	chassis.moveToPoint(0, -30, 3000, {.forwards = true});
+	chassis.turnToHeading(90, 2000);
+	chassis.moveToPoint(24, -35, 3000, {.forwards = true});
+	chassis.turnToHeading(90, 2000);
+	//last 2 rings 
+	chassis.moveToPoint(24, 0, 3000, {.forwards = true});
 	//test
-	//chassis.moveToPoint(12, -12, 2000, {.forwards = true});
-	//chassis.moveToPoint(12, -24, 2000, {.forwards = false});
-	//clamp.set_value(false);
-	//end of left side; move to next goal
-	//chassis.moveToPoint(/*test*/-24, 96, 5000, {.forwards = false});
-	//clamp.set_value(true);
-	//chassis.turnToHeading(-90, 2000);
-	//chassis.moveToPoint(0, 24, 3000, {.forwards = true});
-	//chassis.turnToHeading(-90, 2000);
-	//chassis.moveToPoint(0, 24, 3000, {.forwards = true});
-	//chassis.turnToHeading(-90, 2000);
-	//chassis.moveToPoint(0, 36, 3000, {.forwards = true});
+	chassis.moveToPoint(32, -5, 2000, {.forwards = true});
+	chassis.moveToPoint(45, 8, 2000, {.forwards = false});
+	pros::delay(1000);
+	clamp.set_value(true);
+	//end of left side; move to next goal (moveToPose)
+	chassis.moveToPoint(/*test*/-48, -5, 5000, {.forwards = false});
+	pros::delay(1000);
+	clamp.set_value(false);
+	chassis.turnToHeading(-90, 2000);
+	chassis.moveToPoint(-48, -30, 3000, {.forwards = true});
+	chassis.turnToHeading(-90, 2000);
+	chassis.moveToPoint(-72, -30, 3000, {.forwards = true});
+	chassis.turnToHeading(-90, 2000);
+	chassis.moveToPoint(-72, 0, 3000, {.forwards = true});
 	//test
-	//chassis.moveToPoint(12, -12, 2000, {.forwards = true});
-	//chassis.moveToPoint(12, -24, 2000, {.forwards = false});
-	//interalIntake.move(0);
-	//externalIntake.move(0);
+	chassis.moveToPoint(-72, -6, 2000, {.forwards = true});
+	chassis.moveToPoint(-94, 8, 2000, {.forwards = false});
+	pros::delay(1000);
+	clamp.set_value(true);
+	interalIntake.move(0);
+	externalIntake.move(0);
 	//end of right side
 	
 }
@@ -220,7 +228,7 @@ void opcontrol() {
 		*/
 		if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)||controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)){
 			interalIntake.move(127);
-			externalIntake.move(120);
+			externalIntake.move(127);
 		}else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) || controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2))
 		{
 			interalIntake.move(-127); //-80
@@ -231,8 +239,8 @@ void opcontrol() {
 		}
 
 		/*		CLAMP CONTROLS
-			X to extend
-			B to retract
+			X to extend (open)
+			B to retract (close)
 		*/
 		if(controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
 			clamp.set_value(true);
