@@ -1343,7 +1343,7 @@ void autonSelection()
 		// Checks if the user presses the physical auton selection bumper
 		if (autonSelectionBumper.get_value() == 1)
 		{
-			if (autonSelector < 4)
+			if (autonSelector < 5)
 			{
 				autonSelector++;
 			}
@@ -1555,6 +1555,7 @@ void competition_initialize() {}
  */
 void autonomous()
 {
+	// OLD RIGHT
 	if (autonSelector == 0)
 	{
 		// 1
@@ -1571,21 +1572,25 @@ void autonomous()
 		// Goal
 		chassis.moveToPose(0, 50, 0, 4000, {}, false);
 	}
+
+	// NEW LEFT
 	else if (autonSelector == 1)
 	{
 		armMotors.move_absolute(2370, 100);
-		chassis.moveToPose(-10, 10, 340, 2000, {}, false);
+		chassis.moveToPose(-11, 6, 0, 4000, {}, false);
 		intakeMotors.move_relative(1000, 100);
 		pros::delay(200);
-		armMotors.move_absolute(1800, 100);
-		pros::delay(200);
-		chassis.moveToPose(8, -37, 0, 4000, {.forwards = false}, false);
-		clamp.set_value(true);
+		armMotors.move_absolute(1900, 100);
+		pros::delay(500);
+		armMotors.move_absolute(2000, 100);
+		chassis.moveToPose(10, -38, 0, 4000, {.forwards = false}, false);
 		armMotors.move_absolute(0, 100);
-		intakeMotors.move_relative(-5000, 105);
-		chassis.moveToPose(25, -28, 90, 2000, {}, true);
-		chassis.moveToPoint(34, -28, 2000, {}, true);
-		chassis.moveToPose(8, -50, 180, 4000, {}, false);
+		clamp.set_value(true);
+		intakeMotors.move_relative(-5500, 200);
+		// chassis.moveToPose(25, -28, 90, 2000, {}, true);
+		chassis.moveToPoint(35, -28, 2000, {}, true);
+		chassis.moveToPose(9, -55, 180, 4000, {}, false);
+		intakeMotors.move_relative(-7000, 200);
 		// Either Side 1 Ring
 		// chassis.moveToPoint(0, 25, 4000, {});
 		// armMotors.move_absolute(2400, 100);
@@ -1614,6 +1619,8 @@ void autonomous()
 		// chassis.moveToPoint(24, 31, 2000, {}, false);
 		// chassis.moveToPose(-24, 24, 90, 3000);
 	}
+
+	//OLD LEFT
 	else if (autonSelector == 2)
 	{
 		// Lett Side 2 Ring
@@ -1643,21 +1650,25 @@ void autonomous()
 		// chassis.turnToHeading(135, 2000);
 		// chassis.moveToPoint(26, -5, 2000, {}, true);
 	}
+	// NEW RIGHT
 	else if(autonSelector == 3){
 		armMotors.move_absolute(2370, 100);
-		chassis.moveToPose(14, 9, 0, 3000, {}, false);
+		chassis.moveToPose(16, 7, 0, 3000, {}, false);
 		intakeMotors.move_relative(1000, 100);
 		pros::delay(200);
-		armMotors.move_absolute(1950, 100);
-		pros::delay(500);
 		armMotors.move_absolute(2000, 100);
-		chassis.moveToPose(-8, -40, 0, 4000, {.forwards = false}, false);
+		pros::delay(500);
+		armMotors.move_absolute(2050, 100);
+		chassis.moveToPose(-10, -42, 0, 4000, {.forwards = false}, false);
 		clamp.set_value(true);
 		armMotors.move_absolute(0, 100);
-		intakeMotors.move_relative(-5000, 105);
+		intakeMotors.move_relative(-7000, 200);
 		chassis.moveToPose(-35, -28, 90, 2000, {}, true);
 		chassis.moveToPose(-9, -55, 180, 4000, {}, false);
+		intakeMotors.move_relative(-7000, 200);
 	}
+
+	// SKILLS
 	else if (autonSelector == 4)
 	{
 
@@ -1766,6 +1777,10 @@ void autonomous()
 		// chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
 		// chassis.moveToPoint(-5, 120, 2000, {false});
 	}
+	// NO AUTON
+	else if (autonSelector == 5){
+
+	}
 }
 
 /**
@@ -1784,6 +1799,11 @@ void opcontrol()
 {
 	bool clampState = true;
 	bool clampLastState = true;
+
+	if(autonSelector == 5){
+		clampState = false;
+		clampLastState = false;
+	}
 	// pros::Task timeTrackingTask(timeTracking);
 
 	while (true)
