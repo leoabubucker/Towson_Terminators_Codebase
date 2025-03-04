@@ -57,8 +57,9 @@
 /*                                                                                    */
 /*------------------------------------------------------------------------------------*/
 
-// Controller
+// Controllers
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
+pros::Controller secondaryController(pros::E_CONTROLLER_PARTNER);
 
 // Motors
 pros::Motor rightArm(1, pros::MotorGearset::red);
@@ -74,7 +75,7 @@ pros::Motor rightIntake(2, pros::MotorGearset::green);
 pros::MotorGroup allMotors({-15, -11, 14, 13, -10, 2, -9, 1});
 
 pros::MotorGroup leftMotors({-15, -11},
-							pros::MotorGearset::blue);			   // left motor group - ports 3 (reversed), 4, 5 (reversed)
+							pros::MotorGearset::blue);			  // left motor group - ports 3 (reversed), 4, 5 (reversed)
 pros::MotorGroup rightMotors({14, 13}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 
 pros::MotorGroup intakeMotors({-10, 2}, pros::MotorGearset::green);
@@ -1043,7 +1044,8 @@ void drawTeamFrame()
  */
 void drawControllerDisplay()
 {
-	controller.clear();
+	// controller.clear();
+	secondaryController.clear();
 	int seconds = 0;
 	int minutes = 0;
 	float time = 00.00;
@@ -1054,7 +1056,7 @@ void drawControllerDisplay()
 	while (true)
 	{
 		// Determines and prints disconnected motors
-	
+
 		std::vector<bool> motorConnections = myMotorCollection.isConnected();
 
 		std::string dcMotors = "DC: ";
@@ -1183,6 +1185,107 @@ void drawControllerDisplay()
  * @author Leo Abubucker
  * @date 12/01/2024
  */
+
+void clearControllerScreen()
+{
+	while (getCompetitionStatus() == PRE_AUTONOMOUS)
+	{
+		secondaryController.clear();
+		pros::delay(5000);
+	}
+}
+void drawControllerScoringDisplay()
+{
+	// clearControllerScreen();
+	// pros::delay(200);
+	int bluePoints = 0;
+	int redPoints = 0;
+	bool bonusDecided = false;
+	bool h2hMode = false;
+	int bonusIter = 0;
+	std::vector<std::string> autonBonusOptions = {"Blue", "Red", "Tie"};
+	std::string bonusPrn = "Bonus: " + bonusIter + autonBonusOptions[bonusIter];
+	std::string bluePointsPrn = "B:" + to_string(bluePoints);
+	std::string redPointsPrn = "     R:" + to_string(redPoints);
+	while (true)
+	{
+		while (!bonusDecided)
+		{
+			secondaryController.print(0, 0, bonusPrn.c_str());
+			pros::delay(100);
+			if (secondaryController.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT))
+			{
+				bonusDecided = true;
+				h2hMode = true;
+				if (autonBonusOptions[bonusIter] == "Blue")
+				{
+					bluePoints += 6;
+				}
+				else if (autonBonusOptions[bonusIter] == "Red")
+				{
+					redPoints += 6;
+				}
+				else if (autonBonusOptions[bonusIter] == "Tie")
+				{
+					bluePoints += 3;
+					redPoints += 3;
+				}
+				bluePointsPrn = "B:" + to_string(bluePoints);
+				redPointsPrn = "     R:" + to_string(redPoints);
+				secondaryController.clear_line(0);
+				pros::delay(200);
+				break;
+			}
+			if (secondaryController.get_digital(pros::E_CONTROLLER_DIGITAL_UP))
+			{
+				if (bonusIter >= autonBonusOptions.size() - 1)
+				{
+					bonusIter = 0;
+				}
+				else
+				{
+					bonusIter++;
+				}
+				bonusPrn = "Bonus: " + autonBonusOptions[bonusIter];
+				secondaryController.clear_line(0);
+				pros::delay(100);
+			}
+			else if (secondaryController.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN))
+			{
+				if (bonusIter <= 0)
+				{
+					bonusIter = autonBonusOptions.size() - 1;
+				}
+				else
+				{
+					bonusIter--;
+				}
+				bonusPrn = "Bonus: " + bonusIter + autonBonusOptions[bonusIter];
+				secondaryController.clear_line(0);
+				pros::delay(100);
+			}
+		}
+		while (h2hMode)
+		{
+			pros::delay(200);
+			secondaryController.print(2, 14, bluePointsPrn.c_str());
+			pros::delay(200);
+
+			secondaryController.print(2, 14, redPointsPrn.c_str());
+			pros::delay(200);
+
+
+		}
+		pros::delay(1000);
+	}
+}
+
+/**
+ * @brief Threaded function that calls the seven individual drawing functions to draw the entire GUI every 5 seconds
+ * @relates initialize()
+ * @author Leo Abubucker
+ * @date 12/01/2024
+ */
 void drawGUI()
 {
 	while (true)
@@ -1240,7 +1343,7 @@ void autonSelection()
 		// Checks if the user presses the physical auton selection bumper
 		if (autonSelectionBumper.get_value() == 1)
 		{
-			if (autonSelector < 4)
+			if (autonSelector < 5)
 			{
 				autonSelector++;
 			}
@@ -1411,6 +1514,7 @@ void initialize()
 	// Task Initialization
 	pros::Task guiUpdatingTask(drawGUI);
 	pros::Task motorTrackingTask(motorTracking);
+	pros::Task scoringControllerTask(drawControllerScoringDisplay);
 
 	// Auton Selection
 	autonSelector = 0;
@@ -1451,7 +1555,8 @@ void competition_initialize() {}
  */
 void autonomous()
 {
-	if (autonSelector == 1)
+	// OLD RIGHT
+	if (autonSelector == 0)
 	{
 		// 1
 		chassis.turnToHeading(180, 2000);
@@ -1464,19 +1569,36 @@ void autonomous()
 		chassis.moveToPoint(24, 28, 2000, {}, true);
 		chassis.moveToPoint(-15, 25, 4000, {.forwards = false}, false);
 
-		//Goal
+		// Goal
 		chassis.moveToPose(0, 50, 0, 4000, {}, false);
 	}
-	else if (autonSelector == 2)
+
+	// NEW LEFT
+	else if (autonSelector == 1)
 	{
+		armMotors.move_absolute(2370, 100);
+		chassis.moveToPose(-11, 6, 0, 4000, {}, false);
+		intakeMotors.move_relative(1000, 100);
+		pros::delay(200);
+		armMotors.move_absolute(1900, 100);
+		pros::delay(500);
+		armMotors.move_absolute(2000, 100);
+		chassis.moveToPose(10, -38, 0, 4000, {.forwards = false}, false);
+		armMotors.move_absolute(0, 100);
+		clamp.set_value(true);
+		intakeMotors.move_relative(-5500, 200);
+		// chassis.moveToPose(25, -28, 90, 2000, {}, true);
+		chassis.moveToPoint(35, -28, 2000, {}, true);
+		chassis.moveToPose(9, -55, 180, 4000, {}, false);
+		intakeMotors.move_relative(-7000, 200);
 		// Either Side 1 Ring
-		chassis.moveToPoint(0, 25, 4000, {});
-		armMotors.move_absolute(2400, 100);
-		chassis.moveToPoint(0, 35, 4000, {}, false);
-		armMotors.move_absolute(1400, 100);
-		intakeMotors.move_relative(1500, 80);
-		pros::delay(1000);
-		chassis.moveToPoint(0, 19, 4000, {false}, false);
+		// chassis.moveToPoint(0, 25, 4000, {});
+		// armMotors.move_absolute(2400, 100);
+		// chassis.moveToPoint(0, 35, 4000, {}, false);
+		// armMotors.move_absolute(1400, 100);
+		// intakeMotors.move_relative(1500, 80);
+		// pros::delay(1000);
+		// chassis.moveToPoint(0, 19, 4000, {false}, false);
 
 		// Right Side 2 Ring
 		// chassis.turnToHeading(180, 2000);
@@ -1497,7 +1619,9 @@ void autonomous()
 		// chassis.moveToPoint(24, 31, 2000, {}, false);
 		// chassis.moveToPose(-24, 24, 90, 3000);
 	}
-	else if (autonSelector == 0)
+
+	//OLD LEFT
+	else if (autonSelector == 2)
 	{
 		// Lett Side 2 Ring
 		// chassis.turnToHeading(180, 2000);
@@ -1509,7 +1633,7 @@ void autonomous()
 		// chassis.moveToPoint(-24, 24, 2000, {}, false);
 		// intakeMotors.move_relative(1500, 100);
 		// chassis.moveToPose(24, 24, 270, 3000);
-		 // 1
+		// 1
 		chassis.turnToHeading(180, 2000);
 		chassis.moveToPoint(2, 37, 4000, {.forwards = false}, false);
 		clamp.set_value(true);
@@ -1520,30 +1644,48 @@ void autonomous()
 		chassis.moveToPoint(-24, 28, 2000, {}, true);
 		chassis.moveToPoint(15, 25, 4000, {.forwards = false}, false);
 
-		//Goal
+		// Goal
 		chassis.moveToPose(0, 50, 0, 4000, {}, false);
 		// // intakeMotors.move_relative(-100000, 100);
 		// chassis.turnToHeading(135, 2000);
 		// chassis.moveToPoint(26, -5, 2000, {}, true);
 	}
-	else if (autonSelector == 3)
+	// NEW RIGHT
+	else if(autonSelector == 3){
+		armMotors.move_absolute(2370, 100);
+		chassis.moveToPose(16, 7, 0, 3000, {}, false);
+		intakeMotors.move_relative(1000, 100);
+		pros::delay(200);
+		armMotors.move_absolute(2000, 100);
+		pros::delay(500);
+		armMotors.move_absolute(2050, 100);
+		chassis.moveToPose(-10, -42, 0, 4000, {.forwards = false}, false);
+		clamp.set_value(true);
+		armMotors.move_absolute(0, 100);
+		intakeMotors.move_relative(-7000, 200);
+		chassis.moveToPose(-35, -28, 90, 2000, {}, true);
+		chassis.moveToPose(-9, -55, 180, 4000, {}, false);
+		intakeMotors.move_relative(-7000, 200);
+	}
+
+	// SKILLS
+	else if (autonSelector == 4)
 	{
-		
-		
-	// chassis.moveToPoint(0, 9, 2000);
-	// chassis.turnToHeading(90, 2000);
-	// chassis.moveToPoint(-40, 9, 4000, {false});
-	// chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
-	// chassis.moveToPoint(-60, 0, 4000, {false});
-	// chassis.moveToPoint(10, 22, 4000);
-	// chassis.turnToHeading(290, 2000);
-	// chassis.moveToPoint(70, -10, 4000, {false});
-	// chassis.moveToPoint(50, 10, 2000);
-	// chassis.moveToPoint(50, 110, 2000);
-	// chassis.turnToHeading(300, 2000, {.direction=AngularDirection::CCW_COUNTERCLOCKWISE});
-	// chassis.turnToHeading(125, 2000, {.direction=AngularDirection::CW_CLOCKWISE});
+
+		// chassis.moveToPoint(0, 9, 2000);
+		// chassis.turnToHeading(90, 2000);
+		// chassis.moveToPoint(-40, 9, 4000, {false});
+		// chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.moveToPoint(-60, 0, 4000, {false});
+		// chassis.moveToPoint(10, 22, 4000);
+		// chassis.turnToHeading(290, 2000);
+		// chassis.moveToPoint(70, -10, 4000, {false});
+		// chassis.moveToPoint(50, 10, 2000);
+		// chassis.moveToPoint(50, 110, 2000);
+		// chassis.turnToHeading(300, 2000, {.direction=AngularDirection::CCW_COUNTERCLOCKWISE});
+		// chassis.turnToHeading(125, 2000, {.direction=AngularDirection::CW_CLOCKWISE});
 		// 23pt Auton Skills
-		//1
+		// 1
 		clamp.set_value(true);
 		chassis.moveToPoint(0, 11, 2000, {}, false);
 		chassis.turnToHeading(90, 2000);
@@ -1551,20 +1693,20 @@ void autonomous()
 		chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
 		chassis.moveToPoint(-60, -10, 4000, {false}, false);
 
-		//2
+		// 2
 		chassis.moveToPoint(0, 11, 2000, {}, false);
 		chassis.turnToHeading(270, 2000);
 		chassis.moveToPoint(40, 11, 4000, {false}, false);
 		chassis.turnToHeading(305, 2000, {AngularDirection::CW_CLOCKWISE});
 		chassis.moveToPoint(60, -10, 4000, {false}, false);
 
-		//3
+		// 3
 		chassis.moveToPose(10, 30, 315, 4000, {}, true);
 		// chassis.turnToHeading(270, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
 		// chassis.moveToPoint(-60, 100, 2000, {}, true);
 		// chassis.turnToHeading(315, 2000);
 		// chassis.moveToPoint(-80, 120, 2000, {}, true);
-		
+
 		// chassis.turnToHeading(65, 2000);
 		// chassis.moveToPoint(-20, 110, 4000, {}, true);
 		// chassis.turnToHeading(270, 2000, {AngularDirection::CW_CLOCKWISE});
@@ -1594,30 +1736,30 @@ void autonomous()
 		// chassis.moveToPoint(-10, 70, 2000, {});
 		// armMotors.move_absolute(0, 100);
 
-	// //1st goal new
-	// 	clamp.set_value(true);
-	// 			chassis.moveToPoint(0, 11, 2000, {}, false);
-	// 	chassis.turnToHeading(90, 2000);
-	// 	chassis.moveToPoint(-40, 11, 4000, {false}, false);
-	// 	chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
-	// 	chassis.moveToPoint(-60, -10, 4000, {false}, false);
+		// //1st goal new
+		// 	clamp.set_value(true);
+		// 			chassis.moveToPoint(0, 11, 2000, {}, false);
+		// 	chassis.turnToHeading(90, 2000);
+		// 	chassis.moveToPoint(-40, 11, 4000, {false}, false);
+		// 	chassis.turnToHeading(55, 2000, {AngularDirection::CCW_COUNTERCLOCKWISE});
+		// 	chassis.moveToPoint(-60, -10, 4000, {false}, false);
 
-	// //2nd Goal old
-	// 		chassis.moveToPoint(10, 22, 4000);
-	// 	chassis.turnToHeading(290, 2000);
-	// 	chassis.moveToPoint(70, -10, 4000, {false});
-	// 	chassis.moveToPoint(50, 10, 2000);
-	// 	chassis.moveToPoint(50, 110, 2000);
+		// //2nd Goal old
+		// 		chassis.moveToPoint(10, 22, 4000);
+		// 	chassis.turnToHeading(290, 2000);
+		// 	chassis.moveToPoint(70, -10, 4000, {false});
+		// 	chassis.moveToPoint(50, 10, 2000);
+		// 	chassis.moveToPoint(50, 110, 2000);
 
-	// //3rd goal new
-	// // clamp.set_value(true);
-	// 	chassis.turnToHeading(300, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-	// 	chassis.turnToHeading(110, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
-	// 	chassis.moveToPoint(0, 130, 2000, {false});
-	// 	chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-	// 	chassis.moveToPoint(-5, 110, 2000, {false}, false);
-	// 	chassis.moveToPoint(-40, 110, 2000, {false}, false);
-	// 	chassis.moveToPoint(-70, 150, 4000, {false}, false);
+		// //3rd goal new
+		// // clamp.set_value(true);
+		// 	chassis.turnToHeading(300, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		// 	chassis.turnToHeading(110, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+		// 	chassis.moveToPoint(0, 130, 2000, {false});
+		// 	chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+		// 	chassis.moveToPoint(-5, 110, 2000, {false}, false);
+		// 	chassis.moveToPoint(-40, 110, 2000, {false}, false);
+		// 	chassis.moveToPoint(-70, 150, 4000, {false}, false);
 
 		// chassis.moveToPoint(0, 9, 2000);
 		// chassis.turnToHeading(90, 2000);
@@ -1634,6 +1776,10 @@ void autonomous()
 		// chassis.moveToPoint(0, 130, 2000, {false});
 		// chassis.turnToHeading(52, 2000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
 		// chassis.moveToPoint(-5, 120, 2000, {false});
+	}
+	// NO AUTON
+	else if (autonSelector == 5){
+
 	}
 }
 
@@ -1653,6 +1799,11 @@ void opcontrol()
 {
 	bool clampState = true;
 	bool clampLastState = true;
+
+	if(autonSelector == 5){
+		clampState = false;
+		clampLastState = false;
+	}
 	// pros::Task timeTrackingTask(timeTracking);
 
 	while (true)
