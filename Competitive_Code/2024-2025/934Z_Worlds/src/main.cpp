@@ -16,7 +16,6 @@
 #include <string>
 #include <vector>
 
-
 /*------------------------------------------------------------------------------------*/
 /*                                                                                    */
 /*                      GLOBAL DECLARATIONS AND INITIALIZATIONS */
@@ -73,60 +72,46 @@
 /*                                                                                    */
 /*------------------------------------------------------------------------------------*/
 
-// Paths
-ASSET(initPath_txt);
 // Controllers
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // Drive Motors
-pros::Motor leftFrontDrive(1, pros::v5::MotorGears::blue);
-pros::Motor leftMiddleDrive(2, pros::v5::MotorGears::blue);
-pros::Motor leftBackDrive(3, pros::v5::MotorGears::green);
-pros::Motor rightFrontDrive(4, pros::v5::MotorGears::blue);
-pros::Motor rightMiddleDrive(5, pros::v5::MotorGears::blue);
-pros::Motor rightBackDrive(6, pros::v5::MotorGears::green);
+pros::Motor leftFrontDrive(-19, pros::v5::MotorGears::blue);
+pros::Motor leftStackDrive(10, pros::v5::MotorGears::blue);
+pros::Motor leftBackDrive(-14, pros::v5::MotorGears::blue);
+pros::Motor rightFrontDrive(13, pros::v5::MotorGears::blue);
+pros::Motor rightStackDrive(-20, pros::v5::MotorGears::blue);
+pros::Motor rightBackDrive(12, pros::v5::MotorGears::blue);
 
 // Intake Motors
-pros::Motor firstStageIntakeHalf(7, pros::v5::MotorGears::green);
-pros::Motor secondStageIntake(8, pros::v5::MotorGears::green);
+pros::Motor firstStageIntakeHalf(-11, pros::v5::MotorGears::green);
+pros::Motor secondStageIntake(-2, pros::v5::MotorGears::green);
 
 // Lady Brown Motor
-pros::Motor ladyBrownMotor(9, pros::v5::MotorGears::green);
-pros::Motor leftBack(-11, pros::MotorGearset::blue);
-pros::Motor leftFront(-15, pros::MotorGearset::blue);
-pros::Motor rightBack(13, pros::MotorGearset::blue);
-pros::Motor rightFront(15, pros::MotorGearset::blue);
-pros::Motor leftIntake(-10, pros::MotorGearset::green);
-pros::Motor rightIntake(2, pros::MotorGearset::green);
+pros::Motor ladyBrownHalf(-1, pros::v5::MotorGears::green);
 
 // Motor Groups
-pros::MotorGroup allMotors({-1, -2, -3, 4, 5, 6, -7, -8, -9});
-pros::MotorGroup leftDriveMotors({-1, -2, -3});
-pros::MotorGroup rightDriveMotors({4, 5, 6, 13});
-pros::MotorGroup intakeMotors({-7, -8}, pros::MotorGearset::green);
+pros::MotorGroup allMotors({-19, 10, -14, 13, -20, 12, -11, -2, -1});
+pros::MotorGroup leftDriveMotors({-19, 10, -14}, pros::v5::MotorGears::blue);
+pros::MotorGroup rightDriveMotors({13, -20, 12}, pros::v5::MotorGears::blue);
+pros::MotorGroup intakeMotors({-11, -2}, pros::MotorGearset::green);
 
 // Inertial Sensor
-pros::Imu imu(20);
+pros::Imu imu(3);
 
 // Pistons
 pros::adi::DigitalOut clamp(1);
-pros::adi::DigitalOut hang(2);
+pros::adi::DigitalOut doinker(2);
 
 // Auton Selection Bumper
 pros::adi::DigitalIn autonSelectionBumper(3);
 
 // Auton Confirmation Bumper
-pros::adi::DigitalIn autonConfirmationBumper(4);
+pros::adi::DigitalIn autonConfirmationBumper(6);
 
 // Drivetrain Settings
-lemlib::Drivetrain drivetrain(
-    &leftDriveMotors,                
-    &rightDriveMotors,              
-    9.2,                        
-    lemlib::Omniwheel::NEW_275,
-    450,                      
-    2
-);
+lemlib::Drivetrain drivetrain(&leftDriveMotors, &rightDriveMotors, 13,
+                              lemlib::Omniwheel::NEW_275, 450, 2);
 
 // Lateral Motion Controller
 lemlib::ControllerSettings
@@ -155,13 +140,7 @@ lemlib::ControllerSettings
     );
 
 // Sensors for Odometry
-lemlib::OdomSensors sensors(
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &imu
-);
+lemlib::OdomSensors sensors(nullptr, nullptr, nullptr, nullptr, &imu);
 
 // Input Curve for Throttle Input During Driver Control
 lemlib::ExpoDriveCurve
@@ -709,8 +688,9 @@ void drawAutonSelectorFrame() {
   autonSelectorFrame = {
       {"x-left", 0}, {"x-right", 99}, {"y-top", 189}, {"y-bottom", 240}};
 
-  std::vector<std::string> autonNames= {"RRQ", "BRQ", "RGQ", "BGQ", "RRE", "BRE", "RGE", "BGE", "S", "NA"};
-  // Draws maroon rectangle at above coordinates 
+  std::vector<std::string> autonNames = {"RRQ", "BRQ", "RGQ", "BGQ", "RRE",
+                                         "BRE", "RGE", "BGE", "S",   "NA"};
+  // Draws maroon rectangle at above coordinates
   pros::screen::set_pen(pros::Color::maroon);
   pros::screen::fill_rect(
       autonSelectorFrame["x-left"], autonSelectorFrame["y-top"],
@@ -724,7 +704,8 @@ void drawAutonSelectorFrame() {
   // whether the selection is locked or not in the frame
   pros::screen::set_pen(pros::Color::white);
   pros::screen::print(pros::E_TEXT_MEDIUM, 10, 200, "Auton: ");
-  pros::screen::print(pros::E_TEXT_MEDIUM, 68, 200, to_string(autonNames[autonSelector]).c_str());
+  pros::screen::print(pros::E_TEXT_MEDIUM, 68, 200,
+                      to_string(autonNames[autonSelector]).c_str());
   pros::screen::set_pen(getColorFromValue(waitingForUserInput, USER_INPUT));
 
   if (waitingForUserInput) {
@@ -1005,23 +986,23 @@ void drawControllerDisplay() {
     // Sets the timer based on the given game mode
 
     // Timer starts at 15sec for auton
-    if (getCompetitionStatus() == AUTONOMOUS && modeIter != 1 && autonSelector == 8) {
+    if (getCompetitionStatus() == AUTONOMOUS && modeIter != 1 &&
+        autonSelector == 8) {
       minutes = 1;
       seconds = 0;
       modeIter = 1;
-    }
-    else if (getCompetitionStatus() == AUTONOMOUS && modeIter != 1) {
+    } else if (getCompetitionStatus() == AUTONOMOUS && modeIter != 1) {
       minutes = 0;
       seconds = 15;
       modeIter = 1;
     }
     // Timer starts at 1m45sec for user control
-    else if (getCompetitionStatus() == USER_CONTROL && modeIter != 2 && autonSelector == 8) {
+    else if (getCompetitionStatus() == USER_CONTROL && modeIter != 2 &&
+             autonSelector == 8) {
       minutes = 1;
       seconds = 0;
       modeIter = 2;
-    }
-    else if (getCompetitionStatus() == USER_CONTROL && modeIter != 2) {
+    } else if (getCompetitionStatus() == USER_CONTROL && modeIter != 2) {
       minutes = 1;
       seconds = 45;
       modeIter = 2;
@@ -1045,7 +1026,8 @@ void drawControllerDisplay() {
     }
 
     // Counts down for autonomous
-    else if (getCompetitionStatus() == AUTONOMOUS && modeIter == 1 && autonSelector == 8) {
+    else if (getCompetitionStatus() == AUTONOMOUS && modeIter == 1 &&
+             autonSelector == 8) {
       if (time >= 0.01) {
         seconds -= 1;
         if (seconds <= 0) {
@@ -1056,8 +1038,7 @@ void drawControllerDisplay() {
         seconds = 0;
         minutes = 0;
       }
-    }
-    else if (getCompetitionStatus() == AUTONOMOUS && modeIter == 1) {
+    } else if (getCompetitionStatus() == AUTONOMOUS && modeIter == 1) {
       if (time >= 0.01) {
         seconds -= 1;
       } else {
@@ -1066,7 +1047,8 @@ void drawControllerDisplay() {
       }
     }
 
-    else if (getCompetitionStatus() == USER_CONTROL && modeIter == 2 && autonSelector == 8) {
+    else if (getCompetitionStatus() == USER_CONTROL && modeIter == 2 &&
+             autonSelector == 8) {
       if (time >= 0.01) {
         seconds -= 1;
         if (seconds <= 0) {
@@ -1180,7 +1162,7 @@ void autonSelection() {
 
     // Checks if the user presses the physical auton selection bumper
     if (autonSelectionBumper.get_value() == 1) {
-      if (autonSelector < 10) {
+      if (autonSelector < 11) {
         autonSelector++;
       } else {
         autonSelector = 0;
@@ -1244,19 +1226,19 @@ void initialize() {
   // MotorCollection Initialization
   myMotorCollection.addMotor(firstStageIntakeHalf, "FI");
   myMotorCollection.addMotor(secondStageIntake, "SI");
-  myMotorCollection.addMotor(ladyBrownMotor, "LB");
+  myMotorCollection.addMotor(ladyBrownHalf, "LB");
   myMotorCollection.addMotor(leftFrontDrive, "LFD");
-  myMotorCollection.addMotor(leftMiddleDrive, "LMD");
+  myMotorCollection.addMotor(leftStackDrive, "LMD");
   myMotorCollection.addMotor(leftBackDrive, "LBD");
   myMotorCollection.addMotor(rightFrontDrive, "RFD");
-  myMotorCollection.addMotor(rightMiddleDrive, "RMD");
+  myMotorCollection.addMotor(rightStackDrive, "RMD");
   myMotorCollection.addMotor(rightBackDrive, "RBD");
 
   // Motor Initialization
   leftDriveMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   rightDriveMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   intakeMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-  ladyBrownMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+  ladyBrownHalf.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   allMotors.tare_position();
 
   // Sensor Calibration
@@ -1321,7 +1303,7 @@ void autonomous() {
 
   // Blue Goal Rush Qualifications
   else if (autonSelector == 3) {
-	
+
   }
 
   // Red Ring Rush Eliminations
@@ -1335,12 +1317,12 @@ void autonomous() {
   }
 
   // Red Goal Rush Eliminations
-  else if (autonSelector == 6){
+  else if (autonSelector == 6) {
 
   }
 
   // Blue Goal Rush Eliminations
-  else if (autonSelector == 7){
+  else if (autonSelector == 7) {
 
   }
 
@@ -1348,14 +1330,23 @@ void autonomous() {
   else if (autonSelector == 8) {
   }
 
-  // Only Touch Ladder
+  // Red Only Touch Ladder
   else if (autonSelector == 9) {
 
   }
 
-  // Truly Do Nothing
-  else {
+  // Blue Only Touch Ladder
+  else if (autonSelector == 10) {
 
+  }
+
+  // Red Truly Do Nothing
+  else if (autonSelector == 11) {
+
+  }
+
+  // Blue Truly Do Nothing
+  else if (autonSelector == 12) {
   }
 }
 
@@ -1373,9 +1364,9 @@ void autonomous() {
  */
 void opcontrol() {
   bool clampState = true;
-  bool clampLastState = true;	
-  bool hangState = false;
-  bool hangLastState = false;
+  bool clampLastState = true;
+  bool doinkerState = false;
+  bool doinkerLastState = false;
 
   // Skills
   if (autonSelector == 8) {
@@ -1384,63 +1375,62 @@ void opcontrol() {
   }
 
   while (true) { // Run for 20 ms then update
-    leftDriveMotors.move(controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y));
-    rightDriveMotors.move(controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y));
+    // Drive Controls
+    leftDriveMotors.move(
+        controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y));
+    rightDriveMotors.move(
+        controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y));
 
     // Clamp Controls
-	if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X) && !clampLastState) {
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X) && !clampLastState) {
       clampState = !clampState;
       clampLastState = true;
     } 
-	else if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
+    else if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
       clampLastState = false;
     }
-
-	if (clampState) {
+    if (clampState) {
       clamp.set_value(true);
     } 
-	else {
+    else {
       clamp.set_value(false);
     }
 
     // Intake Controls
-
-	if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
       intakeMotors.move_velocity(-200);
     } 
-	else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
       intakeMotors.move_velocity(200);
     } 
-	else {
+    else {
       intakeMotors.brake();
     }
 
     // Lady Brown Controls
-	
-	if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
-      ladyBrownMotor.move_velocity(200);
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
+      ladyBrownHalf.move_velocity(200);
     } 
-	else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-      ladyBrownMotor.move_velocity(-200);
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+      ladyBrownHalf.move_velocity(-200);
     } 
-	else {
-      ladyBrownMotor.brake();
+    else {
+      ladyBrownHalf.brake();
     }
 
-	// Hang Controls
-	if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && !clampLastState) {
-      hangState = !hangState;
-      hangLastState = true;
+    // Doinker Controls
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && !doinkerLastState) {
+      doinkerState = !doinkerState;
+      doinkerLastState = true;
     } 
-	else if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
-      hangLastState = false;
+    else if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+      doinkerLastState = false;
     }
-
-	if (hangState) {
-      hang.set_value(true);
+    if (doinkerState) {
+      doinker.set_value(true);
     } 
-	else {
-      hang.set_value(false);
+    else {
+      doinker.set_value(false);
     }
 
     pros::delay(20);
