@@ -7,6 +7,9 @@
 #include "pros/misc.h"
 #include "pros/motor_group.hpp"
 #include "pros/motors.h"
+#include "pros/optical.hpp"
+#include "pros/rotation.hpp"
+#include "pros/rtos.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -76,38 +79,45 @@
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // Drive Motors
-pros::Motor leftFrontDrive(-19, pros::v5::MotorGears::blue);
-pros::Motor leftStackDrive(10, pros::v5::MotorGears::blue);
-pros::Motor leftBackDrive(-14, pros::v5::MotorGears::blue);
-pros::Motor rightFrontDrive(13, pros::v5::MotorGears::blue);
-pros::Motor rightStackDrive(-20, pros::v5::MotorGears::blue);
-pros::Motor rightBackDrive(12, pros::v5::MotorGears::blue);
+pros::Motor leftFrontDrive(-2, pros::v5::MotorGears::blue);
+pros::Motor leftStackDrive(15, pros::v5::MotorGears::blue);
+pros::Motor leftBackDrive(-16, pros::v5::MotorGears::blue);
+pros::Motor rightFrontDrive(1, pros::v5::MotorGears::blue);
+pros::Motor rightStackDrive(-21, pros::v5::MotorGears::blue);
+pros::Motor rightBackDrive(20, pros::v5::MotorGears::blue);
 
 // Intake Motors
-pros::Motor firstStageIntakeHalf(-11, pros::v5::MotorGears::green);
-pros::Motor secondStageIntake(-2, pros::v5::MotorGears::green);
+pros::Motor firstStageIntakeHalf(-13, pros::v5::MotorGears::green);
+pros::Motor secondStageIntake(18, pros::v5::MotorGears::green);
 
 // Lady Brown Motor
-pros::Motor ladyBrownHalf(-1, pros::v5::MotorGears::green);
+pros::Motor ladyBrownHalf(-9, pros::v5::MotorGears::green);
 
 // Motor Groups
-pros::MotorGroup allMotors({-19, 10, -14, 13, -20, 12, -11, -2, -1});
-pros::MotorGroup leftDriveMotors({-19, 10, -14}, pros::v5::MotorGears::blue);
-pros::MotorGroup rightDriveMotors({13, -20, 12}, pros::v5::MotorGears::blue);
-pros::MotorGroup intakeMotors({-11, -2}, pros::MotorGearset::green);
+pros::MotorGroup allMotors({-2, 15, -16, 1, -21, 20, -13, 18, -9});
+pros::MotorGroup leftDriveMotors({-2, 15, -16}, pros::v5::MotorGears::blue);
+pros::MotorGroup rightDriveMotors({1, -21, 20}, pros::v5::MotorGears::blue);
+pros::MotorGroup intakeMotors({-13, 18}, pros::MotorGearset::green);
 
 // Inertial Sensor
-pros::Imu imu(3);
+pros::Imu imu(19);
+
+// Optical Sensors
+pros::Optical optical(11);
+// pros::Optical bottomOptical(3);
+
+// Rotational Sensor
+pros::Rotation rotational(14);
 
 // Pistons
-pros::adi::DigitalOut clamp(1);
-pros::adi::DigitalOut doinker(2);
+pros::adi::DigitalOut clamp(7);
+pros::adi::DigitalOut doinker(8);
 
 // Auton Selection Bumper
-pros::adi::DigitalIn autonSelectionBumper(3);
+pros::adi::DigitalIn autonSelectionBumper(2);
 
 // Auton Confirmation Bumper
-pros::adi::DigitalIn autonConfirmationBumper(6);
+pros::adi::DigitalIn autonConfirmationBumper(1);
 
 // Drivetrain Settings
 lemlib::Drivetrain drivetrain(&leftDriveMotors, &rightDriveMotors, 13,
@@ -1162,7 +1172,7 @@ void autonSelection() {
 
     // Checks if the user presses the physical auton selection bumper
     if (autonSelectionBumper.get_value() == 1) {
-      if (autonSelector < 11) {
+      if (autonSelector < 13) {
         autonSelector++;
       } else {
         autonSelector = 0;
@@ -1194,35 +1204,73 @@ void motorTracking() {
   }
 }
 
+void runOpticalLight() {
+  while (true) {
+    optical.set_led_pwm(100);
+    pros::delay(20);
+  }
+}
+
+void autonIntakeControl() {
+  bool allianceIsBlue = true;
+  while (true) {
+    if (autonSelector == 0 || autonSelector == 2 || autonSelector == 4 ||
+        autonSelector == 6 || autonSelector == 8 || autonSelector == 9 ||
+        autonSelector == 11) {
+      allianceIsBlue = false;
+    }
+    optical.set_led_pwm(100);
+    double currentHue = optical.get_hue();
+
+    if (allianceIsBlue && currentHue < 20.00) {
+      pros::delay(25);
+      intakeMotors.move(200);
+    } else if (!allianceIsBlue && currentHue > 200.00 && currentHue < 250.00) {
+      pros::delay(25);
+      intakeMotors.move(200);
+    } else {
+      intakeMotors.move(-200);
+    }
+    pros::delay(20);
+  }
+}
+
+// Thread Initialization
+pros::Task controllerDisplayTask(drawControllerDisplay);
+pros::Task guiUpdatingTask(drawGUI);
+pros::Task motorTrackingTask(motorTracking);
+// pros::Task opticalLightTask(runOpticalLight);
+
 /*------------------------------------------------------------------------------------*/
 /*                                                                                    */
 /*                       VEX COMPETITION CONTROLLED FUNCTIONS */
 /*                                                                                    */
 /*  VEX competition controlled functions are those that are automatically called
- * by   */
+* by   */
 /*  VEX tournament management systems and should not be manually called */
 /*  Includes: */
 /*  - void initialize() - pre-game initializations, thread starting, auton
- * selection  */
+* selection  */
 /*  - void disabled() - tasks to run when robot is disabled - NOT USED */
 /*	- void competition_initialize() - comp specific initializations - NOT
  * USED        */
-/*  - void autonomous() - 15 sec or 1min autonomous robot movement */
-/*  - void opcontrol() - 1m45s loop of user-controlled robot movement /
-/* */
-/*------------------------------------------------------------------------------------*/
-
+ /*  - void autonomous() - 15 sec or 1min autonomous robot movement */
+ /*  - void opcontrol() - 1m45s loop of user-controlled robot movement /
+ /* */
+ /*------------------------------------------------------------------------------------*/
+ 
 /**
- * @brief Runs initialization code. This occurs as soon as the program is
- * started.
- * @details All other competition modes are blocked by initialize; it is
+* @brief Runs initialization code. This occurs as soon as the program is
+* started.
+* @details All other competition modes are blocked by initialize; it is
  * recommended to keep execution time for this mode under a few seconds.
  * @author Leo Abubucker
  * @date 1/6/2025
  */
 void initialize() {
-  pros::Task controllerDisplayTask(drawControllerDisplay);
-
+  // pros::Task controllerDisplayTask(drawControllerDisplay);
+  // intakeRunTask.suspend();
+  optical.set_led_pwm(0);
   // MotorCollection Initialization
   myMotorCollection.addMotor(firstStageIntakeHalf, "FI");
   myMotorCollection.addMotor(secondStageIntake, "SI");
@@ -1233,23 +1281,32 @@ void initialize() {
   myMotorCollection.addMotor(rightFrontDrive, "RFD");
   myMotorCollection.addMotor(rightStackDrive, "RMD");
   myMotorCollection.addMotor(rightBackDrive, "RBD");
-
+  
   // Motor Initialization
   leftDriveMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   rightDriveMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   intakeMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   ladyBrownHalf.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   allMotors.tare_position();
-
+  
   // Sensor Calibration
   chassis.calibrate();
+  
+  optical.set_integration_time(5);
+  optical.disable_gesture();
+  // bottomOptical.set_integration_time(5);
+  // bottomOptical.disable_gesture();
+  rotational.set_position(0);
 
   // Task Initialization
   pros::Task guiUpdatingTask(drawGUI);
   pros::Task motorTrackingTask(motorTracking);
-
+  
+  // pros::Task opticalLightTask(runOpticalLightInAuton);
+  // opticalLightTask.suspend();
+  // intakeRunTask.suspend();
   // Auton Selection
-  autonSelector = 0;
+  autonSelector = 3;
   autonSelection();
 }
 
@@ -1261,9 +1318,9 @@ void initialize() {
  * @author Leo Abubucker
  * @date 12/01/2024
  */
-void disabled() {}
-
-/**
+ void disabled() {}
+ 
+ /**
  * @brief Runs after initialize() and before autonomous
  * @details This is intended for competition-specific initialization routines,
  * such as an autonomous selector on the LCD. This task will exit when the robot
@@ -1285,69 +1342,314 @@ void competition_initialize() {}
  * @author Leo Abubucker
  * @date 1/9/2025
  */
-void autonomous() {
+ void autonomous() {
+   // pros::Task opticalLightTask(runOpticalLightInAuton);
+  // opticalLightTask.resume();
   // Red Ring Rush Qualifications
+  // pros::Task intakeRunTask(autonIntakeControl);
+  // intakeRunTask.suspend();
   if (autonSelector == 0) {
-
+    // ladyBrownHalf.move_absolute(-400, 100);
+    // chassis.moveToPose(0, -30, 0, 3000, {.forwards = false, .maxSpeed = 50}, false);
+    // clamp.set_value(true);
+    // pros::delay(500);
+    // chassis.turnToHeading( 90, 2000, {}, false);
+    // chassis.moveToPose(28, -30, 90, 3000, {.minSpeed = 100}, true);
+    // // intakeMotors.move_relative(-99999, 200);
+    // intakeRunTask.resume();
+    // chassis.turnToHeading(180, 2000, {}, false);
+    // chassis.moveToPose(25, -40, 180, 5000, {.minSpeed = 100}, false);
+    // chassis.moveToPose(30, -30, 180, 2000,{.forwards = false, .minSpeed = 100}, false);
+    // chassis.moveToPose(30, -50, 180, 3000, {.minSpeed = 100}, false);
+    // chassis.moveToPose(25, -30, 190, 4000, {.forwards = false, .minSpeed = 100}, false);
+    // chassis.moveToPose(5, -45, 270, 10000, {.minSpeed = 100}, false);
+    // ladyBrownHalf.move_absolute(-800, 200);
+    // chassis.moveToPose(-10, -50, 270, 10000, {.maxSpeed = 50}, false);
+    ladyBrownHalf.move_absolute(-400, 200);
+    chassis.turnToHeading(
+      30, 1000,
+      {.direction = lemlib::AngularDirection::CW_CLOCKWISE}, false);
+    chassis.moveToPose(-24, -34, 30, 3000, {.forwards = false, .maxSpeed = 50},
+                       false);
+    clamp.set_value(true);
+    pros::delay(1800);
+    chassis.turnToHeading(
+      90, 2000,
+      {.direction = lemlib::AngularDirection::CW_CLOCKWISE}, true);
+    pros::delay(300);
+    // intakeRunTask.resume();
+    chassis.moveToPose(-4, -30, 90, 3000, {},
+                       true);
+    chassis.turnToHeading(
+                        180, 2000,
+                        {.direction = lemlib::AngularDirection::CW_CLOCKWISE}, true);
+    ladyBrownHalf.move_absolute(-700, 200);
+    chassis.moveToPose(-4, -45, 180, 2000, {},
+                          true);
+    chassis.moveToPose(-4, -40, 180, 1000, {.forwards = false, .minSpeed = 127},
+                            true);
+    chassis.turnToHeading(
+                              270, 1000,
+                              {.direction = lemlib::AngularDirection::CW_CLOCKWISE}, true);
+                              chassis.moveToPose(-30, -42, 270, 5000, {.minSpeed=127},
+                                true);
   }
 
   // Blue Ring Rush Qualifications
   else if (autonSelector == 1) {
+    // ladyBrownHalf.move_absolute(-400, 200);
+    // chassis.moveToPose(0, -30, 0, 3000, {.forwards = false, .maxSpeed = 50},
+    //                    false);
+    // clamp.set_value(true);
+    // pros::delay(500);
+    // chassis.turnToHeading(
+    //     270, 2000,
+    //     {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, false);
+    // chassis.moveToPose(-28, -30, 270, 3000, {.minSpeed = 100}, true);
+    // // intakeMotors.move_relative(-99999, 200);
+    // // pros::Task intakeRunTask(autonIntakeControl);
+    // intakeRunTask.resume();
+    // chassis.turnToHeading(
+    //     180, 2000,
+    //     {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, false);
+    // chassis.moveToPose(-25, -55, 180, 5000, {.minSpeed = 100}, false);
+    // chassis.moveToPose(-30, -45, 170, 2000,
+    //                    {.forwards = false, .minSpeed = 100}, false);
+    // chassis.moveToPose(-15, -55, 180, 3000, {.minSpeed = 100}, false);
+    // chassis.moveToPose(-25, -45, 90, 4000, {.forwards = false, .minSpeed = 100},
+    //                    false);
+    // chassis.moveToPose(-5, -45, 90, 10000, {.minSpeed = 100}, false);
+    // ladyBrownHalf.move_absolute(-700, 200);
+    // chassis.moveToPose(10, -50, 90, 10000, {.maxSpeed = 50}, false);
+    ladyBrownHalf.move_absolute(-400, 200);
+    chassis.turnToHeading(
+      330, 1000,
+      {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, false);
+    chassis.moveToPose(24, -34, 330, 3000, {.forwards = false, .maxSpeed = 50},
+                       false);
+    clamp.set_value(true);
+    pros::delay(1800);
+    chassis.turnToHeading(
+      270, 2000,
+      {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, true);
+    pros::delay(300);
+    // intakeRunTask.resume();
+    chassis.moveToPose(4, -30, 270, 3000, {},
+                       true);
+    chassis.turnToHeading(
+                        180, 2000,
+                        {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, true);
+    ladyBrownHalf.move_absolute(-700, 200);
+    chassis.moveToPose(5, -45, 180, 2000, {},
+                          true);
+    chassis.moveToPose(5, -40, 180, 1000, {.forwards = false, .minSpeed = 127},
+                            true);
+    chassis.turnToHeading(
+                              90, 1000,
+                              {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, true);
+                              chassis.moveToPose(30, -42, 90, 5000, {.minSpeed=127},
+                                true);
+    // chassis.turnToHeading(
+    //                     150, 2000,
+    //                     {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, true);
+    // chassis.moveToPose(25, -45, 150, 3000, {},
+    //                       true);
+    // ladyBrownHalf.move_absolute(-800, 200);
 
   }
 
   // Red Goal Rush Qualifications
   else if (autonSelector == 2) {
-
+    ladyBrownHalf.move_absolute(-400, 200);
+    chassis.turnToHeading(
+      350, 1000,
+      {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, false);
+    chassis.moveToPose(5, -34, 350, 3000, {.forwards = false, .maxSpeed = 50},
+                       false);
+    clamp.set_value(true);
+    pros::delay(1800);
+    chassis.turnToHeading(
+      270, 2000,
+      {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, true);
+    pros::delay(300);
+    // intakeRunTask.resume();
+    intakeMotors.move_relative(-99999, 200);
+    pros::delay(1000);
+    ladyBrownHalf.move_absolute(-700, 200);
+    chassis.moveToPose(-10, -30, 270, 3000, {},
+                       true);
+                       chassis.turnToHeading(
+                        210, 2000,
+                        {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, true);
+                        chassis.moveToPose(10, -45, 120, 7000, {},
+                          true);
+    // chassis.turnToHeading(190, 2000, {.minSpeed = 127}, false);
+    // doinker.set_value(true);
+    // pros::delay(1000);
+    // chassis.moveToPose(-2, 4, 0, 2000, {.forwards = false, .minSpeed = 127}, false);
+    // doinker.set_value(false);
+    // chassis.turnToHeading(0, 2000);
+    // chassis.moveToPose(-2, 5, 0, 2000, {.minSpeed = 100}, false);
+    // chassis.turnToHeading(180, 2000);
+    // chassis.moveToPose(-2, 25, 180, 4000, {.forwards = false, .minSpeed = 100}, false);
+    // clamp.set_value(true);
+    // pros::delay(500);
+    // chassis.moveToPose(-2, 10, 180, 4000, {.minSpeed = 100}, true);
+    // // intakeMotors.move_relative(-99999, 200);
+    // intakeRunTask.resume();
+    // pros::delay(1000);
+    // clamp.set_value(false);
+    // chassis.moveToPose(-2, 5, 45, 4000, {.minSpeed = 100}, false);
   }
 
   // Blue Goal Rush Qualifications
   else if (autonSelector == 3) {
+    ladyBrownHalf.move_absolute(-400, 200);
+    chassis.turnToHeading(
+      10, 1000,
+      {.direction = lemlib::AngularDirection::CW_CLOCKWISE}, false);
+    chassis.moveToPose(-5, -34, 10, 3000, {.forwards = false, .maxSpeed = 50},
+                       false);
+    clamp.set_value(true);
+    pros::delay(1800);
+    chassis.turnToHeading(
+      90, 2000,
+      {.direction = lemlib::AngularDirection::CW_CLOCKWISE}, true);
+    pros::delay(300);
+    // intakeRunTask.resume();
+    intakeMotors.move_relative(-99999, 200);
+    pros::delay(1000);
+    ladyBrownHalf.move_absolute(-700, 200);
+    chassis.moveToPose(10, -30, 90, 3000, {},
+                       true);
+                       chassis.turnToHeading(
+                        150, 2000,
+                        {.direction = lemlib::AngularDirection::CW_CLOCKWISE}, true);
+                        chassis.moveToPose(-10, -45, 240, 7000, {},
+                          true);
+    // chassis.moveToPose(2, 40, 0, 2000, {.minSpeed = 127}, false);
+    // chassis.turnToHeading(10, 1500, {.minSpeed = 127}, false);
+    // doinker.set_value(true);
+    // pros::delay(1000);
+    // chassis.moveToPose(2, 4, 0, 2000, {.forwards = false, .minSpeed = 127}, false);
+    // doinker.set_value(false);
+    // chassis.turnToHeading(0, 2000);
+    // chassis.moveToPose(2, 5, 0, 2000, {.minSpeed = 100}, false);
+    // chassis.turnToHeading(180, 2000);
+    // chassis.moveToPose(2, 25, 180, 3000, {.forwards = false, .minSpeed = 100}, false);
+    // clamp.set_value(true);
+    // pros::delay(500);
+    // chassis.moveToPose(2, 10, 180, 4000, {.minSpeed = 100}, true);
+    // // pros::delay(1000);
+    // chassis.moveToPose(8, 5, 180, 4000, {.minSpeed = 100}, false);
+    // // intakeMotors.move_relative(-99999, 200);
+    // // intakeRunTask.resume();
+    // chassis.turnToHeading(15,2000, {}, false);
+    // clamp.set_value(false);
+    // chassis.moveToPose(10, 28, 15, 2000, {.minSpeed = 100}, true);
+    // // intakeRunTask.suspend();
+    // firstStageIntakeHalf.move_relative(-99999, 200);
+    // chassis.turnToHeading(270,2000, {.direction=lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, false);
+    // chassis.moveToPose(30, 28, 15, 2000, {.forwards = false, .minSpeed = 100}, true);
+    // clamp.set_value(true);
+    // pros::delay(500);
 
+
+    // clamp.set_value(false);
   }
 
   // Red Ring Rush Eliminations
   else if (autonSelector == 4) {
-
+  //  intakeRunTask.resume();
+   pros::delay(10000); 
   }
 
   // Blue Ring Rush Eliminations
   else if (autonSelector == 5) {
-
+    ladyBrownHalf.move_absolute(-400, 200);
+    chassis.moveToPose(0, -30, 0, 3000, {.forwards = false, .maxSpeed = 50},
+                       false);
+    clamp.set_value(true);
+    pros::delay(2000);
+    // chassis.moveToPose(0, -50, 0, 3000, {.forwards = false, .maxSpeed = 50},
+    //   false);
+    // intakeRunTask.resume();
+  //   chassis.turnToHeading(
+  //     90, 2000,
+  //     {.direction = lemlib::AngularDirection::CW_CLOCKWISE}, false);
+  // chassis.moveToPose(15, -30, 90, 3000, {.minSpeed = 100}, true);
+  // // intakeMotors.move_relative(-99999, 200);
+  // chassis.moveToPose(30, -30, 90, 3000, {.minSpeed = 100}, true);
+  // pros::delay(2000);
+  // chassis.turnToHeading(
+  //   270, 2000,
+  //   {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, false);
+  // chassis.moveToPose(-20, -30, 270, 3000, {.minSpeed = 100}, true);
+  // ladyBrownHalf.move_absolute(-600, 200);
   }
 
   // Red Goal Rush Eliminations
   else if (autonSelector == 6) {
+    // ladyBrownHalf.move_absolute(-400, 200);
+    // chassis.moveToPose(0, -30, 0, 3000, {.forwards = false, .maxSpeed = 50},
+    //                    false);
+    // clamp.set_value(true);
+    // pros::delay(2000);
+    // chassis.turnToHeading(
+    //   210, 2000,
+    //   {.direction = lemlib::AngularDirection::CW_CLOCKWISE}, false);
+    //   chassis.moveToPose(5, -40, 210, 3000, {.minSpeed = 100}, true);
+    //   ladyBrownHalf.move_absolute(-600, 200);
+    //   pros::delay(2000);
+    //   intakeMotors.move_relative(-99999, 200);
 
-  }
+      ladyBrownHalf.move_absolute(-400, 200);
+      chassis.turnToHeading(
+        330, 2000,
+        {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, false);
+      chassis.moveToPose(20, -30, 330, 3000, {.forwards = false, .maxSpeed = 50},
+                         false);
+      clamp.set_value(true);
+      pros::delay(2000);
+      chassis.turnToHeading(
+        270, 2000,
+        {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, true);
+      pros::delay(2000);
+      // intakeRunTask.resume();
+      chassis.moveToPose(5, -30, 270, 3000, {},
+                         true);
+      chassis.turnToHeading(
+                          150, 2000,
+                          {.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE}, true);
+      chassis.moveToPose(25, -45, 150, 3000, {},
+                            true);
+      ladyBrownHalf.move_absolute(-800, 200);
+
+}
 
   // Blue Goal Rush Eliminations
   else if (autonSelector == 7) {
-
+    chassis.moveToPose(0, -20, 0, 5000, {.forwards = false, .maxSpeed = 50}, false);
+    clamp.set_value(true);
+    pros::delay(2000);
+    intakeMotors.move_relative(-99999, 200);
   }
 
   // Skills
   else if (autonSelector == 8) {
   }
 
-  // Red Only Touch Ladder
-  else if (autonSelector == 9) {
-
+  // Red, Blue Only Touch Ladder
+  else if (autonSelector == 9 || autonSelector == 10) {
+    ladyBrownHalf.move_absolute(-800, 200);
+    chassis.moveToPose(0, 50, 0, 10000, {.maxSpeed = 50}, false);    
   }
 
-  // Blue Only Touch Ladder
-  else if (autonSelector == 10) {
-
+  // Red, Blue Truly Do Nothing
+  else if (autonSelector == 11 || autonSelector == 12) {
+    chassis.moveToPose(0, 10, 0, 10000, {.maxSpeed = 50}, false); 
   }
-
-  // Red Truly Do Nothing
-  else if (autonSelector == 11) {
-
-  }
-
-  // Blue Truly Do Nothing
-  else if (autonSelector == 12) {
-  }
+  // intakeRunTask.remove();
 }
 
 /**
@@ -1363,24 +1665,43 @@ void autonomous() {
  * @date 12/01/2024
  */
 void opcontrol() {
+  // intakeRunTask.remove();
   bool clampState = true;
   bool clampLastState = true;
   bool doinkerState = false;
   bool doinkerLastState = false;
-
+  bool allianceIsBlue = true;
+  bool colorSortState = true;
+  bool colorSortLastState = true;
+  // int convertedRotationalAngle = 0;
+  // bool lbState = false;
+  // bool lbLastState = false;
+  // bool lbWaitingToScore = false;
+  double currentHue;
+  // bool userControlAutomationsState = true;
+  // bool userControlAutomationsLastState = true;
   // Skills
-  if (autonSelector == 8) {
+  if (autonSelector >= 9) {
     clampState = false;
     clampLastState = false;
   }
+  if (autonSelector == 0 || autonSelector == 2 || autonSelector == 4 ||
+      autonSelector == 6 || autonSelector == 8 || autonSelector == 9 ||
+      autonSelector == 11) {
+    allianceIsBlue = false;
+  }
 
   while (true) { // Run for 20 ms then update
+    if(colorSortState){
+      optical.set_led_pwm(100);
+    }
+    else{
+      optical.set_led_pwm(0);
+    }
     // Drive Controls
-    leftDriveMotors.move(
-        controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y));
-    rightDriveMotors.move(
-        controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y));
-
+    leftDriveMotors.move(controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y));
+    rightDriveMotors.move(controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y));
+    
     // Clamp Controls
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_X) && !clampLastState) {
       clampState = !clampState;
@@ -1394,30 +1715,8 @@ void opcontrol() {
     } 
     else {
       clamp.set_value(false);
-    }
-
-    // Intake Controls
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
-      intakeMotors.move_velocity(-200);
-    } 
-    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
-      intakeMotors.move_velocity(200);
-    } 
-    else {
-      intakeMotors.brake();
-    }
-
-    // Lady Brown Controls
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
-      ladyBrownHalf.move_velocity(200);
-    } 
-    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-      ladyBrownHalf.move_velocity(-200);
-    } 
-    else {
-      ladyBrownHalf.brake();
-    }
-
+    }   
+    
     // Doinker Controls
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP) && !doinkerLastState) {
       doinkerState = !doinkerState;
@@ -1432,7 +1731,396 @@ void opcontrol() {
     else {
       doinker.set_value(false);
     }
+    
+    // Color Sort State Control
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && controller.get_digital(pros::E_CONTROLLER_DIGITAL_B) && !colorSortLastState) {
+      colorSortState = !colorSortState;
+      colorSortLastState = true;
+    } 
+    else if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
+      colorSortLastState = false;
+    }
+    
+    // Intake Control
+    currentHue = optical.get_hue();
+    if (colorSortState && allianceIsBlue && currentHue < 20.00) {
+      pros::delay(25);
+      intakeMotors.move(200);
+    } 
+    else if (colorSortState && !allianceIsBlue && currentHue > 200.00 && currentHue < 250.00) {
+      pros::delay(25);
+      intakeMotors.move(200);
+    } 
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+      intakeMotors.move_velocity(-200);
+    } 
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+      firstStageIntakeHalf.move_velocity(-200);
+    } 
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+      intakeMotors.move_velocity(200);
+    }
+    else {
+      intakeMotors.brake();
+    }
 
-    pros::delay(20);
+    // LB Control
+    if ((controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !(controller.get_digital(pros::E_CONTROLLER_DIGITAL_B))) && ladyBrownHalf.get_position() > -865) {
+      ladyBrownHalf.move_velocity(-100);
+    } 
+    else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+      ladyBrownHalf.move_velocity(100);
+    }
+    else if (ladyBrownHalf.get_position() < -865){
+      ladyBrownHalf.move_velocity(50);
+    }
+    else{
+      ladyBrownHalf.brake();
+    }
+
+    // Toggle Color Sort
+    // TESTING
+    //
+    //
+    //
+    //
+        
+    // // User Automations State Control
+    // if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN) && !userControlAutomationsLastState) {
+    //   userControlAutomationsState = !userControlAutomationsState;
+    //   userControlAutomationsLastState = true;
+    // } 
+    // else if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+    //   userControlAutomationsLastState = false;
+    // }
+            
+    // // User Automations Active
+    // if (userControlAutomationsState) {
+    //   topOptical.set_led_pwm(100);
+    //   currentHue = topOptical.get_hue();
+    //   // LB State Control
+    //   if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A) && !lbLastState) {
+    //     lbState = !lbState;
+    //     lbLastState = true;
+    //     if (lbState){
+    //       ladyBrownHalf.move_absolute(0, 200);
+    //     }
+    //     else{
+    //       ladyBrownHalf.move_absolute(-600, 200);
+    //     }
+    //   } 
+    //   else if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+    //     lbLastState = false;
+    //   }
+
+    //   if (lbState) {
+        
+    //     if (lbWaitingToScore && currentHue > 20.00 && currentHue < 100.00){
+    //       lbWaitingToScore = false;
+    //     }
+
+    //     if (lbWaitingToScore){
+    //       // LB Control
+    //       if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && ladyBrownHalf.get_position() > -1400) {
+    //         ladyBrownHalf.move_velocity(-200);
+    //       } 
+    //       else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && ladyBrownHalf.get_position() < 0) {
+    //         ladyBrownHalf.move_velocity(200);
+    //       }
+    //       else{
+    //         ladyBrownHalf.brake();
+    //       }
+    //     }
+    //     else {
+    //       // Lift LB out of way and color sort red ring
+    //       if (allianceIsBlue && currentHue < 20.00) {
+    //         ladyBrownHalf.move_absolute(-600, 200);
+    //         pros::delay(25);
+    //         intakeMotors.move(200);
+    //         ladyBrownHalf.move_absolute(0, 100);
+    //       } 
+    //       // Lift LB out of way and color sort blue ring
+    //       else if (!allianceIsBlue && currentHue > 100.00) {
+    //         ladyBrownHalf.move_absolute(-600, 200);
+    //         pros::delay(25);
+    //         intakeMotors.move(200);
+    //         ladyBrownHalf.move_absolute(0, 100);
+    //       }
+    //       // Lower LB into scoring position and set blue ring into scoring position
+    //       else if (allianceIsBlue && currentHue > 100.00) {
+    //         ladyBrownHalf.move_absolute(0, 200);
+    //         pros::delay(70);
+    //         intakeMotors.brake();
+    //         lbWaitingToScore = true;
+    //       }
+    //       // Lower LB into scoring position and set red ring into scoring position
+    //       else if (!allianceIsBlue && currentHue < 20.00) {
+    //         ladyBrownHalf.move_absolute(0, 200);
+    //         pros::delay(70);
+    //         intakeMotors.brake();
+    //         lbWaitingToScore = true;
+    //       } 
+    //       else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+    //         intakeMotors.move_velocity(-200);
+    //       } 
+    //       else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+    //         intakeMotors.move_velocity(200);
+    //       } 
+    //       else {
+    //         intakeMotors.brake();
+    //       }
+    //     }
+
+    //   }
+    //   else {
+    //     // LB Control
+    //     ladyBrownHalf.brake();
+
+    //     // Intake Control
+    //     if (allianceIsBlue && currentHue < 20.00) {
+    //       pros::delay(25);
+    //       intakeMotors.move(200);
+    //     } 
+    //     else if (!allianceIsBlue && currentHue > 100.00) {
+    //       pros::delay(70);
+    //       intakeMotors.brake();
+    //     } 
+    //     else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+    //       intakeMotors.move_velocity(-200);
+    //     } 
+    //     else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+    //       intakeMotors.move_velocity(200);
+    //     } 
+    //     else {
+    //       intakeMotors.brake();
+    //     }
+    //   }
+    // }
+    // NO USER AUTOMATION
+    // else{
+    //   // Turn off color sort - B
+    //   // 
+    //   // Intake Control
+    //   if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+    //     intakeMotors.move_velocity(-200);
+    //   } 
+    //   else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+    //     firstStageIntakeHalf.move_velocity(-200);
+    //   } 
+    //   else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+    //     intakeMotors.move_velocity(200);
+    //   }
+    //   else {
+    //     intakeMotors.brake();
+    //   }
+      
+    //   // LB Control
+    //   if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && ladyBrownHalf.get_position() > -1400) {
+    //     ladyBrownHalf.move_velocity(-200);
+    //   } 
+    //   else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && ladyBrownHalf.get_position() < 0) {
+    //     ladyBrownHalf.move_velocity(200);
+    //   }
+    //   else{
+    //     ladyBrownHalf.brake();
+    //   }
+    // }
+    // pros::delay(20);
+    
+
+
+    // if (lbState) {
+    //   if (colorSortState) {
+    //     currentHue = topOptical.get_hue();
+    //     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && ladyBrownHalf.get_position() > -1400) {
+    //       ladyBrownHalf.move_velocity(-200);
+    //     } 
+    //     else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && ladyBrownHalf.get_position() < 0) {
+    //       ladyBrownHalf.move_velocity(200);
+    //     }
+    //     // Lift LB out of way and color sort red ring
+    //     else if (allianceIsBlue && currentHue < 20.00) {
+    //       ladyBrownHalf.move_absolute(-600, 200);
+    //       pros::delay(25);
+    //       intakeMotors.move(200);
+    //       ladyBrownHalf.move_absolute(0, 100);
+    //     } 
+    //     // Lift LB out of way and color sort blue ring
+    //     else if (!allianceIsBlue && currentHue > 100.00) {
+    //       ladyBrownHalf.move_absolute(-600, 200);
+    //       pros::delay(25);
+    //       intakeMotors.move(200);
+    //       ladyBrownHalf.move_absolute(0, 100);
+    //     }
+    //     // Lower LB into scoring position and set blue ring into scoring position
+    //     else if (allianceIsBlue && currentHue > 100.00) {
+    //       ladyBrownHalf.move_absolute(0, 200);
+    //       pros::delay(70);
+    //       intakeMotors.brake();
+    //     }
+    //     // Lower LB into scoring position and set red ring into scoring position
+    //     else if (!allianceIsBlue && currentHue < 20.00) {
+    //       ladyBrownHalf.move_absolute(0, 200);
+    //       pros::delay(70);
+    //       intakeMotors.brake();
+    //     } 
+    //   }
+    // }
+    
+    // // Intake Controls
+    // currentHue = topOptical.get_hue();
+
+    // // Color Sort Controls
+    // if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN) &&
+    //     !colorSortLastState) {
+    //   colorSortState = !colorSortState;
+    //   colorSortLastState = true;
+    // } 
+    // else if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+    //   colorSortLastState = false;
+    // }
+
+    // if (colorSortState && allianceIsBlue && currentHue < 20.00) {
+    //   pros::delay(25);
+    //   intakeMotors.move(200);
+    // } 
+    // else if (colorSortState && !allianceIsBlue && currentHue > 100.00) {
+    //   pros::delay(70);
+    //   intakeMotors.brake();
+    // } 
+    // else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+    //   intakeMotors.move_velocity(-200);
+    // } 
+    // else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+    //   intakeMotors.move_velocity(200);
+    // } 
+    // else {
+    //   intakeMotors.brake();
+    // }
+
+    // // Lady Brown Controls
+
+    // if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) &&
+    //     ladyBrownHalf.get_position() > -1400) {
+    //   ladyBrownHalf.move_velocity(-200);
+    // } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) &&
+    //            ladyBrownHalf.get_position() < 0) {
+    //   ladyBrownHalf.move_velocity(200);
+    // }
+    // // else if(lbMode && ladyBrownHalf.get_position() < -10){
+    // //   ladyBrownHalf.move_absolute(0, 200);
+    // // }
+    // // else if (!lbMode && (ladyBrownHalf.get_position() > -750 ||
+    // // ladyBrownHalf.get_position() < -800)){
+    // //   ladyBrownHalf.move_absolute(-800, 200);
+    // // }
+    // else {
+    //   ladyBrownHalf.brake();
+    // }
+
+    // // Lb Controls
+    // if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A) && !lbLastState)
+    // {
+    //   lbState = !lbState;
+    //   lbLastState = true;
+    // }
+    // else if (!controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+    //   lbLastState = false;
+    // }
+    // if(lbState){
+    //   // Ring in lb
+    //   if(lbWaitingToScore){
+    //     // allow driver to score ring
+    //     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) &&
+    //     ladyBrownHalf.get_position() > -800) {
+    //       ladyBrownHalf.move_velocity(-200);
+    //     }
+    //     // when user starts to reset lb, waitinng to score is turned off
+    //     else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) &&
+    //     ladyBrownHalf.get_position() < 0) {
+    //       lbWaitingToScore = false;
+    //       ladyBrownHalf.move_velocity(200);
+    //     }
+    //     else {
+    //       ladyBrownHalf.brake();
+    //     }
+    //   }
+    //   // if want to score a ring with lb as blue alliance but ring is red:
+    //   move lb out of the way and yeet the ring if(colorSortState &&
+    //   allianceIsBlue && currentHue < 20.00){
+    //     ladyBrownHalf.move_absolute(-800, 200);
+    //     pros::delay(25);
+    //     intakeMotors.move(200);
+    //   }
+    //   // if want to score a ring with lb as blue alliance and ring is blue:
+    //   move lb to pickup position and place ring on lb else if
+    //   (allianceIsBlue) {
+    //     ladyBrownHalf.move_absolute(0, 200);
+    //     pros::delay(70);
+    //     intakeMotors.brake();
+    //     lbWaitingToScore = true;
+    //   }
+    //   // if want to score a ring with lb as red alliance but ring is blue:
+    //   move lb out of the way and yeet the ring else if(colorSortState &&
+    //   !allianceIsBlue && currentHue > 100.00){
+    //     ladyBrownHalf.move_absolute(-800, 200);
+    //     pros::delay(25);
+    //     intakeMotors.move(200);
+    //   }
+    //   // if want to score a ring with lb as red alliance and ring is red:
+    //   move lb to pickup position and place ring on lb else if
+    //   (!allianceIsBlue) {
+    //     ladyBrownHalf.move_absolute(0, 200);
+    //     pros::delay(70);
+    //     intakeMotors.brake();
+    //     lbWaitingToScore = true;
+    //   }
+    // }
+    // else{
+    //   // if want to score a ring on mogo as blue alliance but ring is red:
+    //   move lb out of the way and yeet the ring if(colorSortState &&
+    //   allianceIsBlue && currentHue < 20.00){
+    //     ladyBrownHalf.move_absolute(-800, 200);
+    //     pros::delay(25);
+    //     intakeMotors.move(200);
+    //   }
+    //   // if want to score a ring with lb as blue alliance and ring is blue:
+    //   move lb out of the way and allow user to use intake else if
+    //   (allianceIsBlue) {
+    //     ladyBrownHalf.move_absolute(-800, 200);
+    //     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+    //       intakeMotors.move_velocity(-200);
+    //     }
+    //     else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+    //       intakeMotors.move_velocity(200);
+    //     }
+    //     else {
+    //       intakeMotors.brake();
+    //     }
+    //   }
+    //   // if want to score a ring with lb as red alliance but ring is blue:
+    //   move lb out of the way and yeet the ring else if(colorSortState &&
+    //   !allianceIsBlue && currentHue > 100.00){
+    //     ladyBrownHalf.move_absolute(-800, 200);
+    //     pros::delay(25);
+    //     intakeMotors.move(200);
+    //   }
+    //   // if want to score a ring with lb as red alliance and ring is red:
+    //   move lb to pickup position and place ring on lb else if
+    //   (!allianceIsBlue) {
+    //     ladyBrownHalf.move_absolute(-800, 200);
+    //     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+    //       intakeMotors.move_velocity(-200);
+    //     }
+    //     else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+    //       intakeMotors.move_velocity(200);
+    //     }
+    //     else {
+    //       intakeMotors.brake();
+    //     }
+    //   }
+    // }
+
+
   }
 }
