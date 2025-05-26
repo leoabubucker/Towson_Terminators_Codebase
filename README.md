@@ -37,7 +37,7 @@ PROS code is any folder that contains a "project.pros" file in it. PROS code was
 ## Software License
 [MIT](https://choosealicense.com/licenses/mit/)
 
-Copyright (c) 2024 Leo Abubucker
+Copyright (c) 2021-2026 Towson Terminators
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
